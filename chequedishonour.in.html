@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="India's first preventive cheque printing & Section 138 compliance platform. Stop cheque dishonours before they happen with RBI CTS-2010 compliant technology.">
+    <meta name="keywords" content="cheque dishonour, Section 138, cheque printing, RBI CTS-2010, NI Act, cheque bounce notice, legal notice, cheque compliance, India">
+    <meta name="author" content="ChequeDishonour.in">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Stop Cheque Dishonours Before They Happen | ChequeDishonour.in">
+    <meta property="og:description" content="India's first preventive cheque printing & Section 138 compliance platform">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://chequedishonour.in">
+    <meta property="og:image" content="https://chequedishonour.in/og-image.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stop Cheque Dishonours Before They Happen">
+    <meta name="twitter:description" content="India's first preventive cheque printing & Section 138 compliance platform">
+    
+    <title>ChequeDishonour.in | Stop Cheque Dishonours Before They Happen | Section 138 Compliance</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            200: '#f5d0fe',
+                            300: '#f0abfc',
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                            800: '#86198f',
+                            900: '#701a75',
+                        },
+                        success: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .glass-dark {
+            background: rgba(30, 58, 138, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Gradient Background */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-bg-2 {
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #2563eb 0%, #c026d3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Tab Styles */
+        .tab-active {
+            background: linear-gradient(135deg, #2563eb 0%, #c026d3 100%);
+            color: white;
+        }
+        
+        /* Bento Grid */
+        .bento-card {
+            transition: all 0.3s ease;
+        }
+        
+        .bento-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Animation Classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Sticky Ribbon */
+        .sticky-ribbon {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sticky-ribbon.visible {
+            transform: translateY(0);
+        }
+    </style>
+    
+    <!-- JSON-LD Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "ChequeDishonour.in",
+        "alternateName": "Cheque Dishonour Prevention Platform",
+        "url": "https://chequedishonour.in",
+        "image": "https://chequedishonour.in/logo.png",
+        "description": "India's first preventive cheque printing & Section 138 compliance platform. Stop cheque dishonours before they happen with RBI CTS-2010 compliant technology.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web-based",
+        "offers": {
+            "@type": "Offer",
+            "price": "4999",
+            "priceCurrency": "INR",
+            "availability": "https://schema.org/InStock"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "500",
+            "bestRating": "5",
+            "worstRating": "1"
+        },
+        "featureList": "Auto Section 138 notices, MM-accurate printing, Positive Pay integration, Bulk client management, Tally integration",
+        "softwareVersion": "2.0",
+        "author": {
+            "@type": "Organization",
+            "name": "ChequeDishonour.in"
+        }
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ChequeDishonour.in",
+        "url": "https://chequedishonour.in",
+        "logo": "https://chequedishonour.in/logo.png",
+        "description": "India's first preventive cheque printing & Section 138 compliance platform",
+        "foundingDate": "2024",
+        "founders": [
+            {
+                "@type": "Person",
+                "name": "ChequeDishonour Team"
+            }
+        ],
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "IN",
+            "addressLocality": "Mumbai",
+            "addressRegion": "Maharashtra"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-XXX-XXX-XXXX",
+            "contactType": "customer service",
+            "email": "support@chequedishonour.in",
+            "availableLanguage": ["English", "Hindi"]
+        },
+        "sameAs": [
+            "https://www.linkedin.com/company/chequedishonour",
+            "https://twitter.com/chequedishonour"
+        ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is Section 138 of the Negotiable Instruments Act?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Section 138 of the Negotiable Instruments Act, 1881 deals with cheque dishonour in India. When a cheque is returned unpaid due to insufficient funds or other reasons, the payee can initiate legal proceedings against the drawer within 30 days of receiving the bank memo."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How does ChequeDishonour.in prevent cheque bounces?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Our platform uses RBI CTS-2010 compliant technology to ensure millimeter-accurate cheque printing, validates cheque details before printing, integrates with Positive Pay systems, and automates Section 138 compliance notices to prevent technical rejections."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Is this platform compliant with RBI guidelines?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, ChequeDishonour.in is fully compliant with RBI CTS-2010 standards and all applicable regulations under the Negotiable Instruments Act, 1881."
+                }
+            }
+        ]
+    }
+    </script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold gradient-text">ChequeDishonour.in</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-700 hover:text-blue-600 transition-colors">Features</a>
+                    <a href="#solutions" class="text-gray-700 hover:text-blue-600 transition-colors">Solutions</a>
+                    <a href="#pricing" class="text-gray-700 hover:text-blue-600 transition-colors">Pricing</a>
+                    <a href="#contact" class="text-gray-700 hover:text-blue-600 transition-colors">Contact</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button class="hidden sm:block text-gray-700 hover:text-blue-600 transition-colors">Sign In</button>
+                    <button class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-full font-medium hover:shadow-lg hover:scale-105 transition-all">
+                        Start Free Trial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. HERO SECTION -->
+    <section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+        <!-- Animated Background Elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 2s;"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-pulse-slow"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center">
+                <!-- Trust Badge -->
+                <div class="inline-flex items-center space-x-2 bg-white/80 glass-card px-4 py-2 rounded-full mb-8 fade-in">
+                    <i data-lucide="badge-check" class="w-5 h-5 text-green-600"></i>
+                    <span class="text-sm font-medium text-gray-700">RBI CTS-2010 Compliant</span>
+                </div>
+                
+                <!-- Headline -->
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight fade-in">
+                    Stop Cheque<br>
+                    <span class="gradient-text">Dishonours</span><br>
+                    Before They Happen
+                </h1>
+                
+                <!-- Subhead -->
+                <p class="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto fade-in">
+                    India's first preventive cheque printing & Section 138 compliance platform
+                </p>
+                
+                <!-- CTAs -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 fade-in">
+                    <button class="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all flex items-center space-x-2">
+                        <span>Start Free Trial</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    <button class="group glass-card text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all flex items-center space-x-2">
+                        <i data-lucide="play-circle" class="w-5 h-5"></i>
+                        <span>Watch Demo</span>
+                    </button>
+                </div>
+                
+                <!-- Additional Trust Indicators -->
+                <div class="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-500 fade-in">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>500+ CA firms trust us</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span>₹2,847 Cr protected</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                        <span>99.8% success rate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i data-lucide="chevron-down" class="w-8 h-8 text-gray-400"></i>
+        </div>
+    </section>
+
+    <!-- 2. TRUST BAR -->
+    <section class="py-16 bg-white/50 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10">
+                <p class="text-lg text-gray-600 font-medium">Used by 500+ CA firms, NBFCs & manufacturers</p>
+            </div>
+            
+            <!-- Logo Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center mb-12">
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">CA Firm 1</span>
+                </div>
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">NBFC Corp</span>
+                </div>
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">Manufacturing Co</span>
+                </div>
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">Finance Ltd</span>
+                </div>
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">Enterprises</span>
+                </div>
+                <div class="glass-card p-6 rounded-xl flex items-center justify-center fade-in">
+                    <span class="text-gray-400 font-semibold text-lg">Industries</span>
+                </div>
+            </div>
+            
+            <!-- Stats Bar -->
+            <div class="glass-card rounded-2xl p-8 fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="text-center">
+                        <div class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">₹2,847 Cr</div>
+                        <div class="text-gray-600 font-medium">Protected Value</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">99.8%</div>
+                        <div class="text-gray-600 font-medium">Success Rate</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">0</div>
+                        <div class="text-gray-600 font-medium">Dishonours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. AGITATION & RESOLUTION (BENTO GRID) -->
+    <section id="features" class="py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Why Cheque <span class="gradient-text">Dishonours</span> Happen
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Technical rejections cost businesses millions. Here's what you're up against — and how we solve it.
+                </p>
+            </div>
+            
+            <!-- Bento Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Pain Point Cards -->
+                <div class="bento-card glass-card rounded-2xl p-8 bg-red-50/50 border-red-200 fade-in">
+                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="clock" class="w-6 h-6 text-red-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">3-Month Notice Window</h3>
+                    <p class="text-gray-600">Miss the 30-day notice deadline after dishonour? Your legal remedy expires. Complex timelines create costly mistakes.</p>
+                </div>
+                
+                <div class="bento-card glass-card rounded-2xl p-8 bg-orange-50/50 border-orange-200 fade-in">
+                    <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="circle-alert" class="w-6 h-6 text-orange-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Technical Rejections</h3>
+                    <p class="text-gray-600">Misaligned printing, wrong fonts, or CTS non-compliance leads to automatic rejection — even with sufficient funds.</p>
+                </div>
+                
+                <div class="bento-card glass-card rounded-2xl p-8 bg-yellow-50/50 border-yellow-200 fade-in">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="triangle-alert" class="w-6 h-6 text-yellow-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Fraud Risk</h3>
+                    <p class="text-gray-600">Altered cheques, duplicate presentations, and unauthorized modifications expose you to financial losses.</p>
+                </div>
+                
+                <!-- Solution Cards -->
+                <div class="bento-card glass-card rounded-2xl p-8 bg-green-50/50 border-green-200 lg:col-span-2 fade-in">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="file-text" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Auto Section 138 Notices</h3>
+                    <p class="text-gray-600 mb-4">Our platform automatically generates legally compliant Section 138 notices within the statutory 30-day window. Never miss a deadline again.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Auto-generated</span>
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Legal compliant</span>
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Email + Registered post</span>
+                    </div>
+                </div>
+                
+                <div class="bento-card glass-card rounded-2xl p-8 bg-blue-50/50 border-blue-200 fade-in">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="ruler" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">MM-Accurate Printing</h3>
+                    <p class="text-gray-600">Millimeter-perfect alignment ensures RBI CTS-2010 compliance. Zero technical rejections due to printing errors.</p>
+                </div>
+                
+                <div class="bento-card glass-card rounded-2xl p-8 bg-purple-50/50 border-purple-200 lg:col-span-2 fade-in">
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Positive Pay Integration</h3>
+                    <p class="text-gray-600 mb-4">Integrate with bank Positive Pay systems to pre-validate cheque details. Prevent fraud before the cheque reaches the bank.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">HDFC Bank</span>
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">ICICI Bank</span>
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">SBI</span>
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">Axis Bank</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ICP PATHWAYS (TABS) -->
+    <section id="solutions" class="py-20 bg-white/50 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Built for <span class="gradient-text">Your Industry</span>
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Tailored solutions for every type of business handling cheques
+                </p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <button class="tab-btn tab-active px-6 py-3 rounded-full font-semibold transition-all" data-tab="ca-firms">
+                    <i data-lucide="briefcase" class="w-5 h-5 inline mr-2"></i>
+                    CA Firms
+                </button>
+                <button class="tab-btn glass-card text-gray-700 px-6 py-3 rounded-full font-semibold transition-all hover:shadow-lg" data-tab="nbfc">
+                    <i data-lucide="building" class="w-5 h-5 inline mr-2"></i>
+                    NBFCs
+                </button>
+                <button class="tab-btn glass-card text-gray-700 px-6 py-3 rounded-full font-semibold transition-all hover:shadow-lg" data-tab="tally">
+                    <i data-lucide="layout-grid" class="w-5 h-5 inline mr-2"></i>
+                    Tally Users
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="glass-card rounded-3xl p-8 md:p-12 fade-in">
+                <!-- CA Firms Content -->
+                <div class="tab-content" id="ca-firms">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-3xl font-bold text-gray-900 mb-4">Bulk Client Cheque Management</h3>
+                            <p class="text-lg text-gray-600 mb-6">Manage hundreds of client cheques from a single dashboard. Automate compliance, track notices, and protect your clients' interests.</p>
+                            <ul class="space-y-3">
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Multi-client dashboard with role-based access</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Bulk cheque printing with client-wise segregation</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Automated Section 138 notice generation per client</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Client-specific compliance reports</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl p-8 flex items-center justify-center">
+                            <i data-lucide="users" class="w-32 h-32 text-blue-600 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- NBFCs Content -->
+                <div class="tab-content hidden" id="nbfc">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-3xl font-bold text-gray-900 mb-4">Loan Disbursement Automation</h3>
+                            <p class="text-lg text-gray-600 mb-6">Streamline loan disbursements with automated cheque generation, Positive Pay integration, and repayment tracking.</p>
+                            <ul class="space-y-3">
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Automated disbursement cheque generation</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Positive Pay integration for all major banks</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">EMI cheque tracking and dishonour alerts</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Portfolio-level risk analytics</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-8 flex items-center justify-center">
+                            <i data-lucide="building-2" class="w-32 h-32 text-purple-600 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tally Users Content -->
+                <div class="tab-content hidden" id="tally">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-3xl font-bold text-gray-900 mb-4">Direct Tally Integration</h3>
+                            <p class="text-lg text-gray-600 mb-6">Seamlessly connect with Tally ERP 9 and Tally Prime. Print cheques directly from your accounting workflow.</p>
+                            <ul class="space-y-3">
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">One-click cheque printing from Tally vouchers</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Auto-sync party master and bank details</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Real-time cheque status in Tally dashboard</span>
+                                </li>
+                                <li class="flex items-center space-x-3">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                                    <span class="text-gray-700">Compatible with Tally ERP 9 & Tally Prime</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-100 to-blue-100 rounded-2xl p-8 flex items-center justify-center">
+                            <i data-lucide="repeat" class="w-32 h-32 text-green-600 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. URGENCY INJECTOR -->
+    <section class="py-20 gradient-bg-2 relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full filter blur-3xl"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full mb-8">
+                    <i data-lucide="clock" class="w-5 h-5 text-yellow-300"></i>
+                    <span class="text-white font-medium">Time is money</span>
+                </div>
+                
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-8">
+                    Every <span class="text-yellow-300">23 minutes</span>,<br>
+                    a cheque bounces in India<br>
+                    due to printing errors
+                </h2>
+                
+                <p class="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto">
+                    Don't let technical rejections cost you 30-day notice periods and legal remedies
+                </p>
+                
+                <!-- Impact Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div class="glass-dark rounded-2xl p-6">
+                        <div class="text-4xl font-extrabold text-yellow-300 mb-2">47%</div>
+                        <div class="text-white/80">of dishonours are technical rejections</div>
+                    </div>
+                    <div class="glass-dark rounded-2xl p-6">
+                        <div class="text-4xl font-extrabold text-yellow-300 mb-2">30 Days</div>
+                        <div class="text-white/80">to send notice after dishonour</div>
+                    </div>
+                    <div class="glass-dark rounded-2xl p-6">
+                        <div class="text-4xl font-extrabold text-yellow-300 mb-2">₹50K+</div>
+                        <div class="text-white/80">average legal cost per case</div>
+                    </div>
+                </div>
+                
+                <button class="bg-white text-blue-900 px-10 py-5 rounded-full font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all">
+                    Protect Your Business Now →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section id="pricing" class="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Simple, <span class="gradient-text">Transparent</span> Pricing
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Start your 14-day free trial today. No credit card required.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Monthly Plan -->
+                <div class="glass-card rounded-3xl p-8 fade-in">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Monthly</h3>
+                        <p class="text-gray-600">Flexible month-to-month</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <span class="text-5xl font-extrabold gradient-text">₹4,999</span>
+                        <span class="text-gray-600">/month</span>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Unlimited cheque printing</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Auto Section 138 notices</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Positive Pay integration</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Email support</span>
+                        </li>
+                    </ul>
+                    <button class="w-full glass text-gray-700 py-4 rounded-full font-semibold hover:shadow-lg transition-all">
+                        Start 14-Day Free Trial
+                    </button>
+                </div>
+                
+                <!-- Annual Plan -->
+                <div class="glass-card rounded-3xl p-8 border-2 border-purple-400 relative fade-in">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                            Save 20%
+                        </span>
+                    </div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Annual</h3>
+                        <p class="text-gray-600">Best value for growing businesses</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <span class="text-5xl font-extrabold gradient-text">₹48,000</span>
+                        <span class="text-gray-600">/year</span>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Everything in Monthly</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Priority support</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Tally integration</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="circle-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-gray-700">Dedicated account manager</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-full font-semibold hover:shadow-xl hover:scale-105 transition-all">
+                        Start 14-Day Free Trial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. CONVERSION RIBBON + FOOTER -->
+    <footer id="contact" class="bg-gray-900 text-white">
+        <!-- Conversion Ribbon (Sticky) -->
+        <div class="sticky-ribbon" id="stickyRibbon">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-center md:text-left">
+                            <p class="text-lg font-semibold">Start your 14-day free trial today</p>
+                            <p class="text-sm text-white/80">₹4,999/month | ₹48,000/year (save 20%)</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button class="bg-white text-blue-600 px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all">
+                                Start Free Trial →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Footer -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold">ChequeDishonour.in</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        India's first preventive cheque printing & Section 138 compliance platform.
+                    </p>
+                    <div class="flex items-center space-x-2 text-sm text-gray-400">
+                        <i data-lucide="badge-check" class="w-4 h-4 text-green-500"></i>
+                        <span>RBI CTS-2010 Compliant</span>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#solutions" class="text-gray-400 hover:text-white transition-colors">Solutions</a></li>
+                        <li><a href="#pricing" class="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Demo</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Blog</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Legal -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Refund Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">GDPR</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Contact</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center space-x-3 text-gray-400">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            <span>support@chequedishonour.in</span>
+                        </li>
+                        <li class="flex items-center space-x-3 text-gray-400">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                            <span>+91-XXX-XXX-XXXX</span>
+                        </li>
+                        <li class="flex items-center space-x-3 text-gray-400">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span>Mumbai, Maharashtra, India</span>
+                        </li>
+                    </ul>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i data-lucide="facebook" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Bar -->
+            <div class="border-t border-gray-800 mt-12 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-gray-400 text-sm">
+                        © 2024 ChequeDishonour.in. All rights reserved.
+                    </p>
+                    <div class="flex items-center space-x-4 text-sm text-gray-400">
+                        <span>GST: 27XXXXX1234X1ZX</span>
+                        <span>|</span>
+                        <span>Made with ❤️ in India</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        
+        // Tab Functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('tab-active');
+                    b.classList.add('glass-card', 'text-gray-700');
+                });
+                
+                // Add active class to clicked button
+                btn.classList.add('tab-active');
+                btn.classList.remove('glass-card', 'text-gray-700');
+                
+                // Hide all tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Show selected tab content
+                const tabId = btn.getAttribute('data-tab');
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+        
+        // Scroll Animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+        
+        // Sticky Ribbon on Scroll
+        const stickyRibbon = document.getElementById('stickyRibbon');
+        let lastScrollY = window.scrollY;
+        
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            // Show ribbon when scrolled past hero section and not at bottom
+            if (currentScrollY > windowHeight && currentScrollY < documentHeight - windowHeight - 200) {
+                stickyRibbon.classList.add('visible');
+            } else {
+                stickyRibbon.classList.remove('visible');
+            }
+            
+            lastScrollY = currentScrollY;
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Re-initialize Lucide after DOM changes
+        const reinitializeIcons = () => {
+            lucide.createIcons();
+        };
+        
+        // Observe for dynamically added content
+        const mutationObserver = new MutationObserver(reinitializeIcons);
+        mutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    </script>
+</body>
+</html>

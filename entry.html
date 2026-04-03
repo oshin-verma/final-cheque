@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Entry Mode – ChequeShield Advisory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1e40af",
+            "primary-dark": "#1e3a8a",
+            "background-light": "#f0f4ff",
+            "background-dark": "#0f172a",
+            "danger": "#dc2626",
+            "warning": "#f59e0b",
+            "success-green": "#22c55e",
+          },
+          fontFamily: {
+            "display": ["Public Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    html { scroll-behavior: smooth; }
+    body { min-height: 100vh; overflow-x: hidden; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .cheque-preview-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.15); }
+    .tab-active { border-bottom: 3px solid #1e40af; color: #1e40af; font-weight: 700; }
+    .dark .tab-active { border-bottom-color: #60a5fa; color: #60a5fa; }
+    .cheque-input { border: none; border-bottom: 1.5px dashed #94a3b8; background: transparent; width: 100%; outline: none; }
+    .cheque-input:focus { border-bottom-color: #1e40af; }
+    .dark .cheque-input { border-bottom-color: #64748b; }
+    .dark .cheque-input:focus { border-bottom-color: #60a5fa; }
+    .print-field { transition: all 0.2s ease; }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+
+<!-- Header -->
+<header class="bg-primary-dark text-white py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<a href="home page.html" class="flex items-center gap-2 bg-white/10 px-3 py-1 rounded text-sm font-semibold border border-white/20 hover:bg-white/20 transition">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+<span>Home</span>
+</a>
+</div>
+<div class="flex-1 text-center">
+<h1 class="text-xl md:text-2xl font-bold tracking-tight">ChequeDishonour</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition">
+<span class="text-xs uppercase">az</span>
+<span class="font-medium">हिन्दी</span>
+</button>
+<button class="bg-danger hover:bg-red-700 px-4 md:px-6 py-2 rounded-full font-semibold flex items-center gap-2 transition shadow-lg">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="hidden xs:inline">Login</span>
+</button>
+</div>
+</header>
+
+<main class="flex-1">
+<!-- Page Title -->
+<section class="bg-primary-dark text-white py-8 md:py-12 px-6 md:px-20">
+<div class="max-w-7xl mx-auto">
+<div class="flex items-center gap-3 mb-3">
+<a href="home page.html" class="text-white/70 hover:text-white transition">
+<span class="material-symbols-outlined">home</span>
+</a>
+<span class="text-white/50">/</span>
+<span class="text-white/90 font-medium">Entry Mode</span>
+</div>
+<h2 class="text-3xl md:text-4xl font-black">Entry Mode – Fill Cheque Details</h2>
+<p class="text-blue-200 mt-2 text-lg">Enter cheque information once. Print perfectly every time. Zero Section 138 risk.</p>
+</div>
+</section>
+
+<!-- Main Content -->
+<section class="py-8 md:py-12 px-6 md:px-20 bg-[#f0f4ff] dark:bg-slate-900/80">
+<div class="max-w-[1400px] mx-auto grid lg:grid-cols-5 gap-8">
+
+<!-- LEFT: Form Panel -->
+<div class="lg:col-span-2">
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+<!-- Tabs -->
+<div class="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+<button class="tab-btn tab-active px-4 py-3 text-sm font-semibold whitespace-nowrap transition" data-tab="payee" onclick="switchTab('payee')">
+<span class="material-symbols-outlined text-sm align-middle mr-1">person</span> Payee
+</button>
+<button class="tab-btn px-4 py-3 text-sm font-semibold whitespace-nowrap text-slate-500 transition" data-tab="amount" onclick="switchTab('amount')">
+<span class="material-symbols-outlined text-sm align-middle mr-1">payments</span> Amount
+</button>
+<button class="tab-btn px-4 py-3 text-sm font-semibold whitespace-nowrap text-slate-500 transition" data-tab="bank" onclick="switchTab('bank')">
+<span class="material-symbols-outlined text-sm align-middle mr-1">account_balance</span> Bank
+</button>
+<button class="tab-btn px-4 py-3 text-sm font-semibold whitespace-nowrap text-slate-500 transition" data-tab="signature" onclick="switchTab('signature')">
+<span class="material-symbols-outlined text-sm align-middle mr-1">draw</span> Sign
+</button>
+</div>
+
+<!-- Tab: Payee -->
+<div class="tab-content p-6 space-y-5" id="tab-payee">
+<h3 class="text-lg font-bold text-primary dark:text-blue-300 flex items-center gap-2">
+<span class="material-symbols-outlined">person</span> Payee Details
+</h3>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Payee Name <span class="text-danger">*</span></label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="payeeName" oninput="updatePreview()" placeholder="e.g., Mr. Rajesh Kumar" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Payee Address (Optional)</label>
+<textarea class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="payeeAddress" oninput="updatePreview()" placeholder="Address line (if required on cheque)" rows="2"></textarea>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Or / Order</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="orOrder" oninput="updatePreview()" placeholder="e.g., Self, Bearer, Order" type="text" value="or bearer"/>
+</div>
+</div>
+
+<!-- Tab: Amount -->
+<div class="tab-content hidden p-6 space-y-5" id="tab-amount">
+<h3 class="text-lg font-bold text-primary dark:text-blue-300 flex items-center gap-2">
+<span class="material-symbols-outlined">payments</span> Amount &amp; Date
+</h3>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount (₹) <span class="text-danger">*</span></label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="amountNum" oninput="convertAmount(); updatePreview();" placeholder="e.g., 125000" type="number"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount in Words</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-600 text-slate-600 dark:text-slate-300" id="amountWords" readonly="" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Date <span class="text-danger">*</span></label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="chequeDate" oninput="updatePreview()" type="date"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cheque No.</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="chequeNo" oninput="updatePreview()" placeholder="e.g., 045892" type="text"/>
+</div>
+</div>
+</div>
+
+<!-- Tab: Bank -->
+<div class="tab-content hidden p-6 space-y-5" id="tab-bank">
+<h3 class="text-lg font-bold text-primary dark:text-blue-300 flex items-center gap-2">
+<span class="material-symbols-outlined">account_balance</span> Bank &amp; Account
+</h3>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Bank Name <span class="text-danger">*</span></label>
+<select class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="bankName" onchange="updateBankPreview(); updatePreview()">
+<option value="">-- Select Bank --</option>
+<option value="HDFC BANK">HDFC Bank</option>
+<option value="STATE BANK OF INDIA">State Bank of India</option>
+<option value="ICICI BANK">ICICI Bank</option>
+<option value="AXIS BANK">Axis Bank</option>
+<option value="KOTAK MAHINDRA BANK">Kotak Mahindra Bank</option>
+<option value="PUNJAB NATIONAL BANK">Punjab National Bank</option>
+<option value="BANK OF BARODA">Bank of Baroda</option>
+<option value="YES BANK">Yes Bank</option>
+<option value="INDUSIND BANK">IndusInd Bank</option>
+<option value="CANARA BANK">Canara Bank</option>
+<option value="UNION BANK OF INDIA">Union Bank of India</option>
+<option value="IDBI BANK">IDBI Bank</option>
+<option value="CUSTOM">Custom (Enter manually)</option>
+</select>
+</div>
+<div class="hidden" id="customBankField">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Custom Bank Name</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="customBank" oninput="updateBankPreview(); updatePreview()" placeholder="Enter bank name" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Account Number</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="accountNo" oninput="updatePreview()" placeholder="e.g., 50200012345678" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Branch</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="branch" oninput="updatePreview()" placeholder="e.g., Vijay Nagar, Indore" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">IFSC Code</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="ifsc" oninput="updatePreview()" maxlength="11" placeholder="e.g., HDFC0001234" style="text-transform:uppercase" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">MICR Code</label>
+<input class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="micr" maxlength="9" oninput="updateMicrPreview()" placeholder="e.g., 452240002" type="text"/>
+</div>
+</div>
+
+<!-- Tab: Signature -->
+<div class="tab-content hidden p-6 space-y-5" id="tab-signature">
+<h3 class="text-lg font-bold text-primary dark:text-blue-300 flex items-center gap-2">
+<span class="material-symbols-outlined">draw</span> Signature &amp; Notes
+</h3>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Upload Signature Image (PNG)</label>
+<input accept="image/png,image/jpeg" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark" id="signatureUpload" onchange="loadSignature(event)" type="file"/>
+<p class="text-xs text-slate-500 mt-1">Max 200KB. Transparent PNG recommended.</p>
+</div>
+<div id="signaturePreviewArea" class="hidden">
+<div class="flex items-center gap-3">
+<img class="h-16 border border-slate-200 dark:border-slate-600 rounded-lg p-1" id="signatureThumb" src=""/>
+<button class="text-danger text-sm font-semibold hover:underline" onclick="clearSignature()">Remove</button>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes / Memo (Optional)</label>
+<textarea class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary focus:border-primary transition" id="notes" oninput="updatePreview()" placeholder="e.g., Rent for April 2026" rows="3"></textarea>
+</div>
+<div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-warning">warning</span>
+<div class="text-sm text-amber-800 dark:text-amber-300">
+<p class="font-semibold">Pre-Print Checklist:</p>
+<ul class="list-disc list-inside mt-1 space-y-0.5">
+<li>Cheque leaf loaded in printer</li>
+<li>Amount matches in numbers &amp; words</li>
+<li>Date is current / forward-dated</li>
+<li>Payee name is correct</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+<button class="bg-success-green text-white px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-105 transition-transform col-span-2 md:col-span-2" onclick="printCheque()">
+<span class="material-symbols-outlined">print</span> Print Cheque
+</button>
+<button class="bg-primary text-white px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-105 transition" onclick="savePdf()">
+<span class="material-symbols-outlined">picture_as_pdf</span> Save PDF
+</button>
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition" onclick="clearForm()">
+<span class="material-symbols-outlined">delete_sweep</span> Clear
+</button>
+</div>
+<div class="mt-4">
+<a class="block bg-[#475569] text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-105 transition text-center" href="design.html">
+<span class="material-symbols-outlined">dashboard_customize</span> Switch to Design Mode
+</a>
+</div>
+</div>
+
+<!-- RIGHT: Cheque Preview -->
+<div class="lg:col-span-3">
+<div class="sticky top-24">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">visibility</span> Live Cheque Preview
+</h3>
+<span class="text-sm text-slate-500 dark:text-slate-400">Updates as you type</span>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-[24px] p-8 md:p-12 w-full border border-slate-200 dark:border-slate-700 cheque-preview-shadow relative">
+<!-- CHEQUE CANVAS -->
+<div class="border-2 border-slate-200 dark:border-slate-600 rounded-xl p-4 md:p-6 space-y-6 relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900" style="min-height: 280px;" id="chequeCanvas">
+<!-- Crossed Lines (A/c Payee) -->
+<div class="absolute top-4 left-4 flex gap-1 print-field">
+<div class="w-0.5 h-6 bg-primary transform -skew-x-12 rounded"></div>
+<div class="w-0.5 h-6 bg-primary transform -skew-x-12 rounded"></div>
+</div>
+
+<!-- Top Row: Bank + Date -->
+<div class="flex justify-between items-start pt-2">
+<div class="border-2 border-primary px-4 py-1.5 rounded font-bold text-primary dark:text-blue-300 text-sm md:text-base print-field" id="previewBank">
+BANK NAME
+</div>
+<div class="text-right">
+<p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Date:</p>
+<p class="text-lg md:text-xl font-medium text-primary dark:text-white underline underline-offset-8 decoration-dotted decoration-slate-300 dark:decoration-slate-500 print-field min-h-[1.75rem]" id="previewDate">__/__/____</p>
+</div>
+</div>
+
+<!-- Payee Line -->
+<div class="flex items-end gap-2 print-field">
+<span class="text-slate-400 italic font-serif text-sm">Pay</span>
+<span class="text-[10px] text-slate-400 print-field" id="previewOrOrder">or bearer</span>
+<span class="text-base md:text-lg font-medium text-primary dark:text-white flex-1 border-b border-dashed border-slate-300 dark:border-slate-600 pb-0.5 min-h-[1.5rem]" id="previewPayee"></span>
+</div>
+
+<!-- Amount Words -->
+<div class="flex items-end gap-2 print-field">
+<span class="text-slate-400 italic font-serif text-sm">Rupees:</span>
+<span class="text-base md:text-lg font-medium text-primary dark:text-white flex-1 border-b border-dashed border-slate-300 dark:border-slate-600 pb-0.5 min-h-[1.5rem]" id="previewAmountWords"></span>
+</div>
+
+<!-- Bottom Row: Amount Box + Signature -->
+<div class="flex justify-between items-end pt-2">
+<div class="border-2 border-green-500 bg-green-50/50 dark:bg-green-900/10 px-4 py-2 rounded-lg print-field">
+<span class="text-xl font-bold text-green-600" id="previewAmount">₹ 0.00</span>
+</div>
+<div class="text-center">
+<div class="mb-2 opacity-30 dark:opacity-50 h-10 flex items-center justify-center print-field" id="previewSignature">
+<span class="text-xs text-slate-400 italic">Signature area</span>
+</div>
+<p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory</p>
+</div>
+</div>
+
+<!-- MICR Line -->
+<div class="pt-4 border-t border-slate-200 dark:border-slate-600 print-field">
+<div class="font-mono text-xs text-slate-500 dark:text-slate-400 tracking-[0.3em] text-center" id="previewMicr">
+⑈ 000000000 ⑆
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+
+<!-- Scroll to Top Button -->
+<button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary-dark transition z-40" aria-label="Scroll to top">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-primary-dark text-white pt-20 pb-8 px-6 md:px-24">
+<div class="container mx-auto grid md:grid-cols-2 gap-16 mb-20">
+<div>
+<h3 class="text-2xl font-bold mb-8 text-blue-300">Get in Touch</h3>
+<div class="space-y-6 text-gray-300">
+<p><span class="text-white font-semibold">Office:</span> Signimus Technologies Pvt Ltd 23, PU4, Scheme 54 PU4, Indore, Madhya Pradesh 452011</p>
+<p><span class="text-white font-semibold">Phone:</span> <a class="hover:text-white transition" href="tel:+918225998112">+91 8225998112</a></p>
+<p><span class="text-white font-semibold">WhatsApp:</span> <a class="hover:text-white transition" href="https://wa.me/918225998112" target="_blank">+91 8225998112</a></p>
+<div class="space-y-1">
+<p><span class="text-white font-semibold">Email:</span> <a class="hover:text-white transition" href="mailto:support@chequedishonour.in">support@chequedishonour.in</a></p>
+<p class="pl-14"><a class="hover:text-white transition" href="mailto:info@chequedishonour.in">info@chequedishonour.in</a></p>
+<p><span class="text-white font-semibold">Sales:</span> <a class="hover:text-white transition" href="mailto:sales@chequedishonoured.in">sales@chequedishonoured.in</a></p>
+</div>
+</div>
+</div>
+<div class="md:text-right">
+<h3 class="text-2xl font-bold mb-8 text-blue-300">Follow Us</h3>
+<div class="flex md:justify-end gap-4">
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="#">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path></svg>
+</a>
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="https://www.linkedin.com/company/signi-mus/posts/?feedView=all">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>
+</a>
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="https://www.facebook.com/signimustech/">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+<div class="border-t border-white/10 pt-8 text-center text-sm text-gray-400">
+<p class="mb-2">© 2026 ChequeShield Advisory. All Rights Reserved.</p>
+<p>Powered by <span class="text-blue-300">Signimus Technologies Private Limited</span></p>
+</div>
+</footer>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Tab Switching
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('tab-active');
+    btn.classList.add('text-slate-500');
+  });
+  document.getElementById('tab-' + tabName).classList.remove('hidden');
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('tab-active');
+  document.querySelector(`[data-tab="${tabName}"]`).classList.remove('text-slate-500');
+}
+
+// Indian Rupees Number to Words Converter
+function numberToWords(num) {
+  if (num === 0) return 'Zero';
+  
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+                'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  function convertBelowHundred(n) {
+    if (n < 20) return ones[n];
+    return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+  }
+  
+  function convertBelowThousand(n) {
+    if (n < 100) return convertBelowHundred(n);
+    return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convertBelowHundred(n % 100) : '');
+  }
+  
+  let result = '';
+  let crore = Math.floor(num / 10000000);
+  let lakh = Math.floor((num % 10000000) / 100000);
+  let thousand = Math.floor((num % 100000) / 1000);
+  let remainder = num % 1000;
+  
+  if (crore > 0) result += convertBelowThousand(crore) + ' Crore ';
+  if (lakh > 0) result += convertBelowHundred(lakh) + ' Lakh ';
+  if (thousand > 0) result += convertBelowHundred(thousand) + ' Thousand ';
+  if (remainder > 0) result += convertBelowThousand(remainder);
+  
+  return result.trim();
+}
+
+function convertAmount() {
+  const num = parseFloat(document.getElementById('amountNum').value);
+  if (isNaN(num) || num <= 0) {
+    document.getElementById('amountWords').value = '';
+    return;
+  }
+  const rupees = Math.floor(num);
+  const paise = Math.round((num - rupees) * 100);
+  let words = 'Rupees ' + numberToWords(rupees) + ' Only';
+  if (paise > 0) {
+    words = 'Rupees ' + numberToWords(rupees) + ' and ' + numberToWords(paise) + ' Paise Only';
+  }
+  document.getElementById('amountWords').value = words;
+}
+
+// Update Cheque Preview
+function updatePreview() {
+  const payee = document.getElementById('payeeName').value;
+  const date = document.getElementById('chequeDate').value;
+  const amount = document.getElementById('amountNum').value;
+  const amountWords = document.getElementById('amountWords').value;
+  const orOrder = document.getElementById('orOrder').value;
+  const chequeNo = document.getElementById('chequeNo').value;
+  
+  document.getElementById('previewPayee').textContent = payee || '';
+  document.getElementById('previewAmountWords').textContent = amountWords || '';
+  document.getElementById('previewOrOrder').textContent = orOrder || '';
+  
+  if (date) {
+    const d = new Date(date);
+    const formatted = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+    document.getElementById('previewDate').textContent = formatted;
+  } else {
+    document.getElementById('previewDate').textContent = '__/__/____';
+  }
+  
+  if (amount && parseFloat(amount) > 0) {
+    const formatted = '₹ ' + parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('previewAmount').textContent = formatted;
+  } else {
+    document.getElementById('previewAmount').textContent = '₹ 0.00';
+  }
+}
+
+function updateBankPreview() {
+  const bank = document.getElementById('bankName').value;
+  const customBank = document.getElementById('customBank').value;
+  const bankDisplay = document.getElementById('previewBank');
+  
+  if (bank === 'CUSTOM') {
+    document.getElementById('customBankField').classList.remove('hidden');
+    bankDisplay.textContent = customBank || 'BANK NAME';
+  } else {
+    document.getElementById('customBankField').classList.add('hidden');
+    bankDisplay.textContent = bank || 'BANK NAME';
+  }
+}
+
+function updateMicrPreview() {
+  const micr = document.getElementById('micr').value;
+  document.getElementById('previewMicr').textContent = micr ? `⑈ ${micr} ⑆` : '⑈ 000000000 ⑆';
+}
+
+// Signature Upload
+function loadSignature(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('signatureThumb').src = e.target.result;
+      document.getElementById('signaturePreviewArea').classList.remove('hidden');
+      // Show on cheque
+      const sigArea = document.getElementById('previewSignature');
+      sigArea.innerHTML = `<img src="${e.target.result}" class="max-h-full max-w-full object-contain" style="max-height:40px;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function clearSignature() {
+  document.getElementById('signatureUpload').value = '';
+  document.getElementById('signaturePreviewArea').classList.add('hidden');
+  document.getElementById('previewSignature').innerHTML = '<span class="text-xs text-slate-400 italic">Signature area</span>';
+}
+
+// Action Buttons
+function printCheque() {
+  const chequeContent = document.getElementById('chequeCanvas').innerHTML;
+  const printWindow = window.open('', '', 'width=900,height=600');
+  printWindow.document.write(`
+    <html><head><title>Print Cheque</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Public Sans', sans-serif; padding: 20px; }
+      .border-2 { border-width: 2px; }
+      .border { border-width: 1px; }
+      .border-slate-200 { border-color: #e2e8f0; }
+      .border-primary { border-color: #1e40af; }
+      .border-green-500 { border-color: #22c55e; }
+      .border-dashed { border-style: dashed; }
+      .rounded-xl { border-radius: 0.75rem; }
+      .rounded-lg { border-radius: 0.5rem; }
+      .text-primary { color: #1e40af; }
+      .text-green-600 { color: #16a34a; }
+      .text-slate-400 { color: #94a3b8; }
+      .font-bold { font-weight: 700; }
+      .font-medium { font-weight: 500; }
+      .italic { font-style: italic; }
+      .font-serif { font-family: serif; }
+      .underline { text-decoration: underline; }
+      .flex { display: flex; }
+      .items-start { align-items: flex-start; }
+      .items-end { align-items: flex-end; }
+      .items-center { align-items: center; }
+      .justify-between { justify-content: space-between; }
+      .gap-1, .gap-2 { gap: 0.5rem; }
+      .gap-4 { gap: 1rem; }
+      .space-y-6 > * + * { margin-top: 1.5rem; }
+      .space-y-10 > * + * { margin-top: 2.5rem; }
+      .pt-2 { padding-top: 0.5rem; }
+      .pt-4 { padding-top: 1rem; }
+      .pb-0.5 { padding-bottom: 0.125rem; }
+      .pb-1 { padding-bottom: 0.25rem; }
+      .px-4 { padding-left: 1rem; padding-right: 1rem; }
+      .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .py-1\\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+      .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+      .p-4 { padding: 1rem; }
+      .p-6 { padding: 1.5rem; }
+      .w-0\\.5 { width: 0.125rem; }
+      .h-6 { height: 1.5rem; }
+      .h-10 { height: 2.5rem; }
+      .flex-1 { flex: 1; }
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      .text-xs { font-size: 0.75rem; }
+      .text-sm { font-size: 0.875rem; }
+      .text-base { font-size: 1rem; }
+      .text-lg { font-size: 1.125rem; }
+      .text-xl { font-size: 1.25rem; }
+      .text-\\[9px\\] { font-size: 9px; }
+      .text-\\[10px\\] { font-size: 10px; }
+      .transform { transform: var(--tw-transform); }
+      .-skew-x-12 { --tw-skew-x: -12deg; }
+      .uppercase { text-transform: uppercase; }
+      .tracking-widest { letter-spacing: 0.1em; }
+      .tracking-\\[0\\.3em\\] { letter-spacing: 0.3em; }
+      .min-h-\\[1\\.5rem\\] { min-height: 1.5rem; }
+      .min-h-\\[1\\.75rem\\] { min-height: 1.75rem; }
+      .bg-green-50\\/50 { background-color: rgba(240,255,244,0.5); }
+      .font-mono { font-family: monospace; }
+      .border-t { border-top-width: 1px; }
+      .relative { position: relative; }
+      .absolute { position: absolute; }
+      .top-4 { top: 1rem; }
+      .left-4 { left: 1rem; }
+      .mb-1 { margin-bottom: 0.25rem; }
+      .mb-2 { margin-bottom: 0.5rem; }
+      .mt-4 { margin-top: 1rem; }
+      .ml-auto { margin-left: auto; }
+      .opacity-30 { opacity: 0.3; }
+      .decoration-dotted { text-decoration-style: dotted; }
+      .underline-offset-8 { text-underline-offset: 8px; }
+      .bg-primary { background-color: #1e40af; }
+      .dark\\:text-blue-300 { color: #93c5fd; }
+      .dark\\:text-white { color: #fff; }
+      .dark\\:border-slate-500 { border-color: #64748b; }
+      .dark\\:border-slate-600 { border-color: #475569; }
+      .dark\\:decoration-slate-500 { text-decoration-color: #64748b; }
+      .dark\\:from-slate-800 { --tw-gradient-from: #1e293b; }
+      .dark\\:to-slate-900 { --tw-gradient-to: #0f172a; }
+      .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+      .from-white { --tw-gradient-from: #fff; }
+      .to-slate-50 { --tw-gradient-to: #f8fafc; }
+      @media print { body { padding: 0; } }
+    </style>
+    </head><body>${chequeContent}</body></html>
+  `);
+  printWindow.document.close();
+  setTimeout(() => { printWindow.print(); }, 500);
+}
+
+function savePdf() {
+  alert('PDF Export: In production, this uses html2pdf.js or jsPDF to generate a printable PDF.\n\nFor now, use "Print Cheque" and select "Save as PDF" as the printer destination.');
+}
+
+function clearForm() {
+  if (!confirm('Clear all fields? This cannot be undone.')) return;
+  document.querySelectorAll('input:not([readonly]), textarea, select').forEach(el => {
+    if (el.type === 'file' || el.type === 'date') el.value = '';
+    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  document.getElementById('orOrder').value = 'or bearer';
+  document.getElementById('customBankField').classList.add('hidden');
+  clearSignature();
+  updatePreview();
+  updateBankPreview();
+  updateMicrPreview();
+}
+
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('chequeDate').value = today;
+  updatePreview();
+});
+  </script>
+
+</body></html>

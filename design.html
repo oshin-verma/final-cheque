@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Design Mode – ChequeShield Advisory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1e40af",
+            "primary-dark": "#1e3a8a",
+            "background-light": "#f0f4ff",
+            "background-dark": "#0f172a",
+            "danger": "#dc2626",
+            "warning": "#f59e0b",
+            "success-green": "#22c55e",
+          },
+          fontFamily: {
+            "display": ["Public Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    html { scroll-behavior: smooth; }
+    body { min-height: 100vh; overflow-x: hidden; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .cheque-canvas {
+      background-image:
+        linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .dark .cheque-canvas {
+      background-image:
+        linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+    }
+    .cheque-element {
+      cursor: move;
+      position: absolute;
+      user-select: none;
+      border: 1.5px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .cheque-element:hover { border-color: rgba(30,64,175,0.3); }
+    .cheque-element.selected { border-color: #1e40af; outline: 2px solid rgba(30,64,175,0.2); outline-offset: 2px; }
+    .dark .cheque-element.selected { border-color: #60a5fa; outline-color: rgba(96,165,250,0.2); }
+    .resize-handle {
+      position: absolute; bottom: -4px; right: -4px; width: 10px; height: 10px;
+      background: #1e40af; border-radius: 50%; cursor: nwse-resize; display: none;
+    }
+    .dark .resize-handle { background: #60a5fa; }
+    .cheque-element.selected .resize-handle { display: block; }
+    .layer-item.active { background: rgba(30,64,175,0.08); border-left: 3px solid #1e40af; }
+    .dark .layer-item.active { background: rgba(96,165,250,0.1); border-left-color: #60a5fa; }
+    .tool-btn { @apply flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition; }
+    .tool-btn.active { @apply bg-primary text-white hover:bg-primary-dark; }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+
+<!-- Header -->
+<header class="bg-primary-dark text-white py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<a href="home page.html" class="flex items-center gap-2 bg-white/10 px-3 py-1 rounded text-sm font-semibold border border-white/20 hover:bg-white/20 transition">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+<span>Home</span>
+</a>
+</div>
+<div class="flex-1 text-center">
+<h1 class="text-xl md:text-2xl font-bold tracking-tight">ChequeDishonour</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition">
+<span class="text-xs uppercase">az</span>
+<span class="font-medium">हिन्दी</span>
+</button>
+<button class="bg-danger hover:bg-red-700 px-4 md:px-6 py-2 rounded-full font-semibold flex items-center gap-2 transition shadow-lg">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="hidden xs:inline">Login</span>
+</button>
+</div>
+</header>
+
+<!-- Toolbar -->
+<section class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-8 py-2">
+<div class="max-w-[1600px] mx-auto">
+<!-- Toolbar Row 1 -->
+<div class="flex flex-wrap items-center gap-2 mb-2">
+<div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+<button class="tool-btn" onclick="addElement('text')" title="Add Text">
+<span class="material-symbols-outlined text-lg">text_fields</span>
+Text
+</button>
+<button class="tool-btn" onclick="addElement('logo')" title="Add Logo">
+<span class="material-symbols-outlined text-lg">image</span>
+Logo
+</button>
+<button class="tool-btn" onclick="addElement('signature')" title="Add Signature Box">
+<span class="material-symbols-outlined text-lg">draw</span>
+Sign
+</button>
+<button class="tool-btn" onclick="addElement('line')" title="Add Line">
+<span class="material-symbols-outlined text-lg">horizontal_rule</span>
+Line
+</button>
+</div>
+<div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+<button class="tool-btn" onclick="undoAction()" title="Undo">
+<span class="material-symbols-outlined text-lg">undo</span>
+</button>
+<button class="tool-btn" onclick="redoAction()" title="Redo">
+<span class="material-symbols-outlined text-lg">redo</span>
+</button>
+</div>
+<div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+<label class="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Template:</label>
+<select class="text-xs px-2 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-600" id="templateSelect" onchange="loadTemplate(this.value)">
+<option value="">-- Select Bank Template --</option>
+<option value="hdfc">HDFC Bank</option>
+<option value="sbi">State Bank of India</option>
+<option value="icici">ICICI Bank</option>
+<option value="axis">Axis Bank</option>
+<option value="kotak">Kotak Mahindra Bank</option>
+<option value="pnb">Punjab National Bank</option>
+<option value="bob">Bank of Baroda</option>
+</select>
+</div>
+<div class="ml-auto flex items-center gap-2">
+<button class="bg-success-green text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 text-sm hover:scale-105 transition-transform" onclick="printCheque()">
+<span class="material-symbols-outlined text-sm">print</span> Print
+</button>
+<button class="bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 text-sm hover:scale-105 transition" onclick="exportPNG()">
+<span class="material-symbols-outlined text-sm">image</span> PNG
+</button>
+<button class="bg-slate-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 text-sm hover:scale-105 transition" onclick="exportPDF()">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span> PDF
+</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Page Title -->
+<section class="bg-primary-dark text-white py-4 md:py-6 px-6 md:px-20">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+<div>
+<div class="flex items-center gap-3 mb-1 text-sm text-blue-200">
+<a class="hover:text-white transition" href="home page.html">Home</a>
+<span>/</span>
+<span>Design Mode</span>
+</div>
+<h2 class="text-2xl md:text-3xl font-black">Design Mode – Customize Cheque Layout</h2>
+</div>
+<div class="flex gap-2">
+<a class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 text-sm transition border border-white/20" href="entry.html">
+<span class="material-symbols-outlined text-sm">edit</span> Switch to Entry Mode
+</a>
+</div>
+</div>
+</section>
+
+<main class="flex-1">
+<!-- Main Workspace -->
+<section class="py-6 md:py-8 px-4 md:px-8 bg-[#f0f4ff] dark:bg-slate-900/80">
+<div class="max-w-[1600px] mx-auto grid lg:grid-cols-[280px_1fr_280px] gap-6">
+
+<!-- LEFT PANEL: Layers & Elements -->
+<div class="order-2 lg:order-1">
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden sticky top-24">
+<div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+<h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">layers</span> Layers
+</h3>
+</div>
+<div class="max-h-[300px] overflow-y-auto p-2" id="layersList">
+<!-- Dynamic layer items -->
+</div>
+
+<div class="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
+<h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-lg">add_circle</span> Add Elements
+</h3>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('payee')">
+<span class="material-symbols-outlined text-sm text-primary">person</span> Payee
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('amount')">
+<span class="material-symbols-outlined text-sm text-primary">payments</span> Amount
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('date')">
+<span class="material-symbols-outlined text-sm text-primary">calendar_today</span> Date
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('micr')">
+<span class="material-symbols-outlined text-sm text-primary">qr_code</span> MICR
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('bank')">
+<span class="material-symbols-outlined text-sm text-primary">account_balance</span> Bank
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition text-sm font-medium" onclick="addElement('address')">
+<span class="material-symbols-outlined text-sm text-primary">location_on</span> Address
+</button>
+</div>
+</div>
+
+<!-- Save/Load Template -->
+<div class="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
+<div class="space-y-2">
+<input class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" id="templateName" placeholder="Template name..." type="text"/>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition" onclick="saveTemplate()">
+<span class="material-symbols-outlined text-sm align-middle">save</span> Save
+</button>
+<button class="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 rounded-lg text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition" onclick="loadCustomTemplate()">
+<span class="material-symbols-outlined text-sm align-middle">folder_open</span> Load
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- CENTER: Canvas -->
+<div class="order-1 lg:order-2">
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-4 md:p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">grid_on</span>
+<span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Cheque Canvas</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="toggleGrid()">
+<span class="material-symbols-outlined text-sm align-middle">grid_view</span> Grid
+</button>
+<button class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="zoomIn()">
+<span class="material-symbols-outlined text-sm align-middle">zoom_in</span> +
+</button>
+<span class="text-xs font-bold text-slate-500" id="zoomLevel">100%</span>
+<button class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="zoomOut()">
+<span class="material-symbols-outlined text-sm align-middle">zoom_out</span> −
+</button>
+<button class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="resetZoom()">
+<span class="material-symbols-outlined text-sm align-middle">restart_alt</span> Reset
+</button>
+</div>
+</div>
+
+<!-- Cheque Canvas -->
+<div class="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+<div class="relative cheque-canvas transition-transform duration-200 mx-auto" id="chequeCanvas" style="width: 800px; height: 360px; transform: scale(1); transform-origin: top left;" onmousedown="deselectAll(event)">
+<!-- Default cheque elements -->
+<!-- Bank Name -->
+<div class="cheque-element selected" data-type="bank" id="el-bank" style="left: 560px; top: 20px; font-size: 16px; font-weight: 700; color: #1e40af;" onmousedown="startDrag(event, 'el-bank')">
+<div class="border-2 border-primary px-4 py-1.5 rounded bg-white/80 dark:bg-slate-800/80">HDFC BANK</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- Date -->
+<div class="cheque-element" data-type="date" id="el-date" style="left: 50px; top: 25px; font-size: 14px; font-weight: 500; color: #1e40af;" onmousedown="startDrag(event, 'el-date')">
+<span class="bg-white/80 dark:bg-slate-800/80 px-1">Date: __/__/____</span>
+<div class="resize-handle"></div>
+</div>
+
+<!-- A/c Payee Cross Lines -->
+<div class="cheque-element" data-type="cross" id="el-cross" style="left: 18px; top: 16px; font-size: 12px; color: #1e40af;" onmousedown="startDrag(event, 'el-cross')">
+<div class="flex gap-0.5 bg-white/80 dark:bg-slate-800/80 p-1 rounded">
+<div class="w-0.5 h-5 bg-primary transform -skew-x-12 rounded"></div>
+<div class="w-0.5 h-5 bg-primary transform -skew-x-12 rounded"></div>
+</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- Payee -->
+<div class="cheque-element" data-type="payee" id="el-payee" style="left: 80px; top: 100px; font-size: 16px; font-weight: 500; color: #1e40af;" onmousedown="startDrag(event, 'el-payee')">
+<div class="flex items-end gap-2 bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded">
+<span class="text-slate-400 italic font-serif text-sm">Pay</span>
+<span class="border-b border-dashed border-slate-300 dark:border-slate-600 pb-0.5 min-w-[200px]">_________________</span>
+</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- Amount Words -->
+<div class="cheque-element" data-type="amount_words" id="el-amount-words" style="left: 80px; top: 160px; font-size: 16px; font-weight: 500; color: #1e40af;" onmousedown="startDrag(event, 'el-amount-words')">
+<div class="flex items-end gap-2 bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded">
+<span class="text-slate-400 italic font-serif text-sm">Rupees:</span>
+<span class="border-b border-dashed border-slate-300 dark:border-slate-600 pb-0.5 min-w-[300px]">_____________________________</span>
+</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- Amount Box -->
+<div class="cheque-element" data-type="amount" id="el-amount" style="left: 540px; top: 220px; font-size: 18px; font-weight: 700; color: #16a34a;" onmousedown="startDrag(event, 'el-amount')">
+<div class="border-2 border-green-500 bg-green-50/50 dark:bg-green-900/10 px-4 py-2 rounded">₹ 0.00</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- Signature -->
+<div class="cheque-element" data-type="signature" id="el-signature" style="left: 560px; top: 250px; font-size: 12px; color: #94a3b8;" onmousedown="startDrag(event, 'el-signature')">
+<div class="text-center bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded">
+<div class="opacity-30 h-8 flex items-center justify-center mb-1">
+<span class="text-[10px] text-slate-400 italic">Signature</span>
+</div>
+<p class="text-[8px] font-bold uppercase tracking-widest">Authorized Signatory</p>
+</div>
+<div class="resize-handle"></div>
+</div>
+
+<!-- MICR -->
+<div class="cheque-element" data-type="micr" id="el-micr" style="left: 100px; top: 310px; font-size: 12px; font-weight: 400; color: #64748b; font-family: monospace;" onmousedown="startDrag(event, 'el-micr')">
+<div class="bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded tracking-[0.3em]">⑈ 452240002 ⑆</div>
+<div class="resize-handle"></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<!-- RIGHT PANEL: Properties -->
+<div class="order-3">
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden sticky top-24">
+<div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+<h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">tune</span> Properties
+</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" id="propLabel">Select an element</p>
+</div>
+<div class="p-4 space-y-4" id="propertiesPanel">
+<!-- Default state -->
+<div class="text-center py-8 text-slate-400">
+<span class="material-symbols-outlined text-4xl mb-2">touch_app</span>
+<p class="text-sm">Click on any element on the canvas to edit its properties</p>
+</div>
+</div>
+</div>
+
+<!-- Quick Info -->
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden mt-4 p-4">
+<h4 class="font-bold text-slate-700 dark:text-slate-300 text-sm mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-warning text-base">lightbulb</span> Tips
+</h4>
+<ul class="text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
+<li class="flex items-start gap-1.5"><span class="material-symbols-outlined text-sm mt-px">check_circle</span> Drag elements to reposition</li>
+<li class="flex items-start gap-1.5"><span class="material-symbols-outlined text-sm mt-px">check_circle</span> Select + right panel to style</li>
+<li class="flex items-start gap-1.5"><span class="material-symbols-outlined text-sm mt-px">check_circle</span> Use bank templates as starting point</li>
+<li class="flex items-start gap-1.5"><span class="material-symbols-outlined text-sm mt-px">check_circle</span> Grid helps with alignment</li>
+<li class="flex items-start gap-1.5"><span class="material-symbols-outlined text-sm mt-px">check_circle</span> Save templates for reuse</li>
+</ul>
+</div>
+</div>
+
+</div>
+</section>
+
+<!-- Bottom Action Bar -->
+<section class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-3 sticky bottom-0 z-40">
+<div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">info</span>
+<span id="statusBar">Ready – Design your cheque layout</span>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<a class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition" href="entry.html">
+<span class="material-symbols-outlined text-sm">edit</span> Entry Mode
+</a>
+<button class="bg-primary text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 text-sm hover:bg-primary-dark transition" onclick="saveTemplate()">
+<span class="material-symbols-outlined text-sm">save</span> Save Template
+</button>
+<button class="bg-success-green text-white px-6 py-2 rounded-lg font-bold flex items-center gap-1.5 text-sm hover:scale-105 transition-transform shadow-lg shadow-green-500/20" onclick="printCheque()">
+<span class="material-symbols-outlined text-sm">print</span> Print Cheque
+</button>
+</div>
+</div>
+</section>
+
+<!-- Scroll to Top Button -->
+<button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-16 right-6 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary-dark transition z-40" aria-label="Scroll to top">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-primary-dark text-white pt-20 pb-8 px-6 md:px-24">
+<div class="container mx-auto grid md:grid-cols-2 gap-16 mb-20">
+<div>
+<h3 class="text-2xl font-bold mb-8 text-blue-300">Get in Touch</h3>
+<div class="space-y-6 text-gray-300">
+<p><span class="text-white font-semibold">Office:</span> Signimus Technologies Pvt Ltd 23, PU4, Scheme 54 PU4, Indore, Madhya Pradesh 452011</p>
+<p><span class="text-white font-semibold">Phone:</span> <a class="hover:text-white transition" href="tel:+918225998112">+91 8225998112</a></p>
+<p><span class="text-white font-semibold">WhatsApp:</span> <a class="hover:text-white transition" href="https://wa.me/918225998112" target="_blank">+91 8225998112</a></p>
+<div class="space-y-1">
+<p><span class="text-white font-semibold">Email:</span> <a class="hover:text-white transition" href="mailto:support@chequedishonour.in">support@chequedishonour.in</a></p>
+<p class="pl-14"><a class="hover:text-white transition" href="mailto:info@chequedishonour.in">info@chequedishonour.in</a></p>
+<p><span class="text-white font-semibold">Sales:</span> <a class="hover:text-white transition" href="mailto:sales@chequedishonoured.in">sales@chequedishonoured.in</a></p>
+</div>
+</div>
+</div>
+<div class="md:text-right">
+<h3 class="text-2xl font-bold mb-8 text-blue-300">Follow Us</h3>
+<div class="flex md:justify-end gap-4">
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="#">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path></svg>
+</a>
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="https://www.linkedin.com/company/signi-mus/posts/?feedView=all">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>
+</a>
+<a class="bg-white/10 p-4 rounded-full hover:bg-white/20 transition" href="https://www.facebook.com/signimustech/">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+<div class="border-t border-white/10 pt-8 text-center text-sm text-gray-400">
+<p class="mb-2">© 2026 ChequeShield Advisory. All Rights Reserved.</p>
+<p>Powered by <span class="text-blue-300">Signimus Technologies Private Limited</span></p>
+</div>
+</footer>
+</div>
+
+<!-- JavaScript -->
+<script>
+// State
+let selectedElement = null;
+let undoStack = [];
+let redoStack = [];
+let currentZoom = 1;
+let gridVisible = true;
+
+// Element ID counter
+let elementCounter = 9;
+
+// Element Templates
+const elementTemplates = {
+  text: { html: 'New Text', left: 100, top: 100, fontSize: 14, fontWeight: 400, color: '#1e40af', label: 'Text' },
+  logo: { html: '<span class="text-2xl">🏦</span>', left: 20, top: 20, fontSize: 24, fontWeight: 400, color: '#1e40af', label: 'Logo' },
+  signature: { html: '<div class="text-center p-2"><div class="h-10 border-b border-dashed border-slate-300 mb-1"></div><p class="text-[8px] text-slate-400 uppercase font-bold tracking-widest">Signature</p></div>', left: 550, top: 230, fontSize: 12, fontWeight: 400, color: '#94a3b8', label: 'Signature' },
+  line: { html: '<div class="h-0.5 bg-slate-400 w-32"></div>', left: 100, top: 200, fontSize: 12, fontWeight: 400, color: '#94a3b8', label: 'Line' },
+  payee: { html: '<div class="flex items-end gap-2 px-2 py-1"><span class="text-slate-400 italic font-serif text-sm">Pay</span><span class="border-b border-dashed border-slate-300 pb-0.5 min-w-[200px]">_________________</span></div>', left: 80, top: 100, fontSize: 16, fontWeight: 500, color: '#1e40af', label: 'Payee' },
+  amount: { html: '<div class="border-2 border-green-500 bg-green-50 px-4 py-2 rounded text-green-600 font-bold">₹ 0.00</div>', left: 540, top: 220, fontSize: 18, fontWeight: 700, color: '#16a34a', label: 'Amount' },
+  date: { html: '<span class="px-1">Date: __/__/____</span>', left: 50, top: 25, fontSize: 14, fontWeight: 500, color: '#1e40af', label: 'Date' },
+  micr: { html: '<div class="px-3 py-1 font-mono tracking-[0.3em]">⑈ 000000000 ⑆</div>', left: 100, top: 310, fontSize: 12, fontWeight: 400, color: '#64748b', label: 'MICR' },
+  bank: { html: '<div class="border-2 border-primary px-4 py-1.5 rounded font-bold text-primary">BANK NAME</div>', left: 560, top: 20, fontSize: 16, fontWeight: 700, color: '#1e40af', label: 'Bank' },
+  address: { html: '<div class="px-2 py-1 text-slate-500 text-sm">Branch Address</div>', left: 400, top: 20, fontSize: 12, fontWeight: 400, color: '#64748b', label: 'Address' }
+};
+
+// Save state for undo
+function saveState() {
+  const canvas = document.getElementById('chequeCanvas');
+  undoStack.push(canvas.innerHTML);
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+}
+
+function undoAction() {
+  if (undoStack.length === 0) return;
+  const canvas = document.getElementById('chequeCanvas');
+  redoStack.push(canvas.innerHTML);
+  canvas.innerHTML = undoStack.pop();
+  rebindElements();
+  updateLayers();
+  updateStatus('Undo performed');
+}
+
+function redoAction() {
+  if (redoStack.length === 0) return;
+  const canvas = document.getElementById('chequeCanvas');
+  undoStack.push(canvas.innerHTML);
+  canvas.innerHTML = redoStack.pop();
+  rebindElements();
+  updateLayers();
+  updateStatus('Redo performed');
+}
+
+// Add Element
+function addElement(type) {
+  saveState();
+  const template = elementTemplates[type];
+  if (!template) return;
+  const id = 'el-new-' + (elementCounter++);
+  
+  const el = document.createElement('div');
+  el.className = 'cheque-element';
+  el.id = id;
+  el.dataset.type = type;
+  el.style.left = template.left + 'px';
+  el.style.top = template.top + 'px';
+  el.style.fontSize = template.fontSize + 'px';
+  el.style.fontWeight = template.fontWeight;
+  el.style.color = template.color;
+  el.onmousedown = function(e) { startDrag(e, id); };
+  el.innerHTML = template.html + '<div class="resize-handle"></div>';
+  
+  document.getElementById('chequeCanvas').appendChild(el);
+  selectElement(el);
+  updateLayers();
+  updateStatus('Added ' + template.label + ' element');
+}
+
+// Drag functionality
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
+let dragEl = null;
+
+function startDrag(e, id) {
+  if (e.target.classList.contains('resize-handle')) {
+    startResize(e, id);
+    return;
+  }
+  e.preventDefault();
+  e.stopPropagation();
+  saveState();
+  const el = document.getElementById(id);
+  selectElement(el);
+  isDragging = true;
+  dragEl = el;
+  const canvasRect = document.getElementById('chequeCanvas').getBoundingClientRect();
+  dragOffset.x = e.clientX - el.offsetLeft;
+  dragOffset.y = e.clientY - el.offsetTop;
+  
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e) {
+  if (!isDragging || !dragEl) return;
+  const canvas = document.getElementById('chequeCanvas');
+  let newX = e.clientX - dragOffset.x;
+  let newY = e.clientY - dragOffset.y;
+  // Constrain
+  newX = Math.max(0, Math.min(newX, canvas.offsetWidth - dragEl.offsetWidth));
+  newY = Math.max(0, Math.min(newY, canvas.offsetHeight - dragEl.offsetHeight));
+  dragEl.style.left = newX + 'px';
+  dragEl.style.top = newY + 'px';
+  updatePropertiesPanel();
+}
+
+function stopDrag() {
+  isDragging = false;
+  dragEl = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+}
+
+// Resize functionality
+let isResizing = false;
+let resizeEl = null;
+let resizeStart = {};
+
+function startResize(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  saveState();
+  isResizing = true;
+  resizeEl = document.getElementById(id);
+  resizeStart = {
+    x: e.clientX,
+    y: e.clientY,
+    w: resizeEl.offsetWidth,
+    h: resizeEl.offsetHeight
+  };
+  document.addEventListener('mousemove', onResize);
+  document.addEventListener('mouseup', stopResize);
+}
+
+function onResize(e) {
+  if (!isResizing || !resizeEl) return;
+  const dx = e.clientX - resizeStart.x;
+  const dy = e.clientY - resizeStart.y;
+  resizeEl.style.width = Math.max(30, resizeStart.w + dx) + 'px';
+  updatePropertiesPanel();
+}
+
+function stopResize() {
+  isResizing = false;
+  resizeEl = null;
+  document.removeEventListener('mousemove', onResize);
+  document.removeEventListener('mouseup', stopResize);
+}
+
+// Select / Deselect
+function selectElement(el) {
+  document.querySelectorAll('.cheque-element').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedElement = el;
+  updatePropertiesPanel();
+  updateLayers();
+}
+
+function deselectAll(e) {
+  if (e.target.id === 'chequeCanvas') {
+    document.querySelectorAll('.cheque-element').forEach(e => e.classList.remove('selected'));
+    selectedElement = null;
+    resetPropertiesPanel();
+    updateLayers();
+  }
+}
+
+function rebindElements() {
+  document.querySelectorAll('.cheque-element').forEach(el => {
+    el.onmousedown = function(e) { startDrag(e, el.id); };
+  });
+}
+
+// Properties Panel
+function updatePropertiesPanel() {
+  if (!selectedElement) return;
+  const el = selectedElement;
+  const type = el.dataset.type || 'custom';
+  document.getElementById('propLabel').textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Element';
+  
+  const panel = document.getElementById('propertiesPanel');
+  panel.innerHTML = `
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Content (HTML)</label>
+        <textarea class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 font-mono" rows="3" id="propContent" oninput="updatePropContent()">${escapeHtml(el.innerHTML).replace(/<div class="resize-handle"><\/div>/, '').trim()}</textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">X Position</label>
+          <input type="number" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" id="propX" value="${parseInt(el.style.left)}" oninput="updateProp('left', this.value)"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Y Position</label>
+          <input type="number" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" id="propY" value="${parseInt(el.style.top)}" oninput="updateProp('top', this.value)"/>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Font Size (px)</label>
+          <input type="number" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" id="propFontSize" value="${parseInt(el.style.fontSize) || 14}" oninput="updateProp('fontSize', this.value + 'px')"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Font Weight</label>
+          <select class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" id="propWeight" onchange="updateProp('fontWeight', this.value)">
+            <option value="400" ${parseInt(el.style.fontWeight) === 400 ? 'selected' : ''}>Regular (400)</option>
+            <option value="500" ${parseInt(el.style.fontWeight) === 500 ? 'selected' : ''}>Medium (500)</option>
+            <option value="600" ${parseInt(el.style.fontWeight) === 600 ? 'selected' : ''}>SemiBold (600)</option>
+            <option value="700" ${parseInt(el.style.fontWeight) === 700 ? 'selected' : ''}>Bold (700)</option>
+            <option value="800" ${parseInt(el.style.fontWeight) === 800 ? 'selected' : ''}>ExtraBold (800)</option>
+            <option value="900" ${parseInt(el.style.fontWeight) === 900 ? 'selected' : ''}>Black (900)</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Color</label>
+        <div class="flex items-center gap-2">
+          <input type="color" class="w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-600 cursor-pointer" id="propColor" value="${rgbToHex(el.style.color) || '#1e40af'}" oninput="updateProp('color', this.value)"/>
+          <input type="text" class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 font-mono" value="${el.style.color}" oninput="updateProp('color', this.value)" id="propColorText"/>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Text Align</label>
+        <div class="flex gap-1">
+          <button class="flex-1 py-2 rounded-lg text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="updateProp('textAlign', 'left')">
+            <span class="material-symbols-outlined text-sm">format_align_left</span>
+          </button>
+          <button class="flex-1 py-2 rounded-lg text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="updateProp('textAlign', 'center')">
+            <span class="material-symbols-outlined text-sm">format_align_center</span>
+          </button>
+          <button class="flex-1 py-2 rounded-lg text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="updateProp('textAlign', 'right')">
+            <span class="material-symbols-outlined text-sm">format_align_right</span>
+          </button>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+        <button class="w-full bg-danger/10 text-danger py-2 rounded-lg text-sm font-semibold hover:bg-danger/20 transition flex items-center justify-center gap-1.5" onclick="deleteSelected()">
+          <span class="material-symbols-outlined text-sm">delete</span> Delete Element
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function resetPropertiesPanel() {
+  document.getElementById('propLabel').textContent = 'Select an element';
+  document.getElementById('propertiesPanel').innerHTML = `
+    <div class="text-center py-8 text-slate-400">
+      <span class="material-symbols-outlined text-4xl mb-2">touch_app</span>
+      <p class="text-sm">Click on any element on the canvas to edit its properties</p>
+    </div>
+  `;
+}
+
+function updateProp(prop, value) {
+  if (!selectedElement) return;
+  saveState();
+  const map = {
+    'fontSize': 'fontSize',
+    'fontWeight': 'fontWeight',
+    'color': 'color',
+    'left': 'left',
+    'top': 'top',
+    'textAlign': 'textAlign',
+    'width': 'width'
+  };
+  if (map[prop]) {
+    selectedElement.style[map[prop]] = value;
+  }
+  if (prop === 'color') {
+    const colorInput = document.getElementById('propColor');
+    const textInput = document.getElementById('propColorText');
+    if (colorInput && value.startsWith('#')) colorInput.value = value;
+    if (textInput) textInput.value = value;
+  }
+}
+
+function updatePropContent() {
+  if (!selectedElement) return;
+  const textarea = document.getElementById('propContent');
+  if (textarea) {
+    saveState();
+    selectedElement.innerHTML = textarea.value + '<div class="resize-handle"></div>';
+  }
+}
+
+function deleteSelected() {
+  if (!selectedElement) return;
+  saveState();
+  selectedElement.remove();
+  selectedElement = null;
+  resetPropertiesPanel();
+  updateLayers();
+  updateStatus('Element deleted');
+}
+
+// Layers Panel
+function updateLayers() {
+  const list = document.getElementById('layersList');
+  const elements = document.querySelectorAll('.cheque-element');
+  let html = '';
+  elements.forEach((el, i) => {
+    const type = el.dataset.type || 'custom';
+    const isActive = el === selectedElement;
+    html += `
+      <div class="layer-item flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition ${isActive ? 'active' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}" onclick="selectElementById('${el.id}')">
+        <span class="material-symbols-outlined text-sm text-slate-400">drag_indicator</span>
+        <span class="flex-1 font-medium truncate">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+        <button class="text-slate-400 hover:text-danger transition" onclick="event.stopPropagation(); deleteElementById('${el.id}')">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+    `;
+  });
+  list.innerHTML = html || '<p class="text-xs text-slate-400 text-center py-4">No elements yet</p>';
+}
+
+function selectElementById(id) {
+  const el = document.getElementById(id);
+  if (el) selectElement(el);
+}
+
+function deleteElementById(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    saveState();
+    if (el === selectedElement) { selectedElement = null; resetPropertiesPanel(); }
+    el.remove();
+    updateLayers();
+    updateStatus('Element deleted');
+  }
+}
+
+// Zoom
+function zoomIn() {
+  currentZoom = Math.min(2, currentZoom + 0.1);
+  applyZoom();
+}
+function zoomOut() {
+  currentZoom = Math.max(0.5, currentZoom - 0.1);
+  applyZoom();
+}
+function resetZoom() {
+  currentZoom = 1;
+  applyZoom();
+}
+function applyZoom() {
+  document.getElementById('chequeCanvas').style.transform = `scale(${currentZoom})`;
+  document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// Grid Toggle
+function toggleGrid() {
+  const canvas = document.getElementById('chequeCanvas');
+  gridVisible = !gridVisible;
+  canvas.classList.toggle('cheque-canvas', gridVisible);
+  updateStatus(gridVisible ? 'Grid enabled' : 'Grid disabled');
+}
+
+// Templates
+const bankTemplates = {
+  hdfc: {
+    bank: { text: 'HDFC BANK', x: 560, y: 20, color: '#1e40af' },
+    micr: { text: '⑈ 452240002 ⑆', x: 100, y: 310 }
+  },
+  sbi: {
+    bank: { text: 'STATE BANK OF INDIA', x: 500, y: 20, color: '#1d4ed8' },
+    micr: { text: '⑈ 400002001 ⑆', x: 100, y: 310 }
+  },
+  icici: {
+    bank: { text: 'ICICI BANK', x: 580, y: 20, color: '#f97316' },
+    micr: { text: '⑈ 400229002 ⑆', x: 100, y: 310 }
+  },
+  axis: {
+    bank: { text: 'AXIS BANK', x: 590, y: 20, color: '#7c3aed' },
+    micr: { text: '⑈ 400211002 ⑆', x: 100, y: 310 }
+  },
+  kotak: {
+    bank: { text: 'KOTAK MAHINDRA BANK', x: 520, y: 20, color: '#dc2626' },
+    micr: { text: '⑈ 400485002 ⑆', x: 100, y: 310 }
+  },
+  pnb: {
+    bank: { text: 'PUNJAB NATIONAL BANK', x: 500, y: 20, color: '#1e3a8a' },
+    micr: { text: '⑈ 110024024 ⑆', x: 100, y: 310 }
+  },
+  bob: {
+    bank: { text: 'BANK OF BARODA', x: 560, y: 20, color: '#f97316' },
+    micr: { text: '⑈ 400012018 ⑆', x: 100, y: 310 }
+  }
+};
+
+function loadTemplate(bank) {
+  if (!bank) return;
+  saveState();
+  const template = bankTemplates[bank];
+  if (!template) return;
+  
+  // Update bank element
+  const bankEl = document.getElementById('el-bank');
+  if (bankEl) {
+    bankEl.querySelector('div').textContent = template.bank.text;
+    bankEl.style.left = template.bank.x + 'px';
+    bankEl.style.top = template.bank.y + 'px';
+    bankEl.style.color = template.bank.color;
+    const inner = bankEl.querySelector('div');
+    if (inner) inner.style.borderColor = template.bank.color;
+  }
+  
+  // Update MICR
+  const micrEl = document.getElementById('el-micr');
+  if (micrEl) {
+    micrEl.querySelector('div').textContent = template.micr.text;
+    micrEl.style.left = template.micr.x + 'px';
+    micrEl.style.top = template.micr.y + 'px';
+  }
+  
+  updateStatus('Loaded ' + bank.toUpperCase() + ' template');
+}
+
+// Save/Load Templates
+function saveTemplate() {
+  const name = document.getElementById('templateName').value || 'Custom Template ' + new Date().toLocaleDateString();
+  const canvas = document.getElementById('chequeCanvas');
+  const data = {
+    name: name,
+    html: canvas.innerHTML,
+    zoom: currentZoom,
+    date: new Date().toISOString()
+  };
+  const templates = JSON.parse(localStorage.getItem('chequeTemplates') || '[]');
+  templates.push(data);
+  localStorage.setItem('chequeTemplates', JSON.stringify(templates));
+  updateStatus('Template "' + name + '" saved!');
+  alert('Template "' + name + '" saved to browser storage.');
+}
+
+function loadCustomTemplate() {
+  const templates = JSON.parse(localStorage.getItem('chequeTemplates') || '[]');
+  if (templates.length === 0) {
+    alert('No saved templates found. Save one first!');
+    return;
+  }
+  const names = templates.map((t, i) => `${i + 1}. ${t.name} (${t.date})`).join('\n');
+  const choice = prompt('Available templates:\n\n' + names + '\n\nEnter number to load:');
+  if (choice) {
+    const idx = parseInt(choice) - 1;
+    if (templates[idx]) {
+      document.getElementById('chequeCanvas').innerHTML = templates[idx].html;
+      rebindElements();
+      updateLayers();
+      updateStatus('Loaded template: ' + templates[idx].name);
+    }
+  }
+}
+
+// Export Functions
+function printCheque() {
+  const canvas = document.getElementById('chequeCanvas');
+  // Clean up for print (remove resize handles, borders)
+  const clone = canvas.cloneNode(true);
+  clone.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  clone.querySelectorAll('.cheque-element').forEach(e => {
+    e.style.border = 'none';
+    e.style.outline = 'none';
+  });
+  
+  const printWindow = window.open('', '', 'width=900,height=600');
+  printWindow.document.write(`
+    <html><head><title>Print Cheque</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Public Sans', sans-serif; padding: 20px; margin: 0; }
+      .cheque-element { position: absolute; }
+      .border-2 { border-width: 2px; }
+      .border { border-width: 1px; }
+      .border-primary { border-color: #1e40af; }
+      .border-green-500 { border-color: #22c55e; }
+      .border-dashed { border-style: dashed; }
+      .border-slate-300 { border-color: #cbd5e1; }
+      .rounded-xl, .rounded-lg, .rounded { border-radius: 0.5rem; }
+      .flex { display: flex; }
+      .items-end { align-items: flex-end; }
+      .items-center { align-items: center; }
+      .gap-0\\.5 { gap: 0.125rem; }
+      .gap-2 { gap: 0.5rem; }
+      .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+      .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+      .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+      .px-4 { padding-left: 1rem; padding-right: 1rem; }
+      .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+      .py-1\\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+      .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+      .p-2 { padding: 0.5rem; }
+      .w-0\\.5 { width: 0.125rem; }
+      .h-5 { height: 1.25rem; }
+      .h-8 { height: 2rem; }
+      .h-10 { height: 2.5rem; }
+      .min-w-\\[200px\\] { min-width: 200px; }
+      .min-w-\\[300px\\] { min-width: 300px; }
+      .text-xs { font-size: 0.75rem; }
+      .text-sm { font-size: 0.875rem; }
+      .text-2xl { font-size: 1.5rem; }
+      .text-\\[8px\\] { font-size: 8px; }
+      .text-\\[10px\\] { font-size: 10px; }
+      .font-bold { font-weight: 700; }
+      .font-medium { font-weight: 500; }
+      .font-serif { font-family: serif; }
+      .font-mono { font-family: monospace; }
+      .italic { font-style: italic; }
+      .uppercase { text-transform: uppercase; }
+      .tracking-widest { letter-spacing: 0.1em; }
+      .tracking-\\[0\\.3em\\] { letter-spacing: 0.3em; }
+      .text-primary { color: #1e40af; }
+      .text-green-600 { color: #16a34a; }
+      .text-slate-400 { color: #94a3b8; }
+      .text-slate-500 { color: #64748b; }
+      .bg-green-50\\/50 { background-color: rgba(240,255,244,0.5); }
+      .bg-white\\/80 { background-color: rgba(255,255,255,0.8); }
+      .opacity-30 { opacity: 0.3; }
+      .transform { transform: var(--tw-transform); }
+      .-skew-x-12 { --tw-skew-x: -12deg; }
+      .text-center { text-align: center; }
+      .mb-1 { margin-bottom: 0.25rem; }
+      .border-b { border-bottom-width: 1px; }
+      .pb-0\\.5 { padding-bottom: 0.125rem; }
+      .relative { position: relative; }
+      .text-right { text-align: right; }
+      @media print { body { padding: 0; } }
+    </style>
+    </head><body><div style="position:relative;width:800px;height:360px;">${clone.innerHTML}</div></body></html>
+  `);
+  printWindow.document.close();
+  setTimeout(() => { printWindow.print(); }, 500);
+}
+
+function exportPNG() {
+  alert('PNG Export: In production, this uses html2canvas to capture the cheque canvas as a PNG file.\n\nThe cheque layout is ready for printing or screenshot capture.');
+}
+
+function exportPDF() {
+  alert('PDF Export: In production, this uses jsPDF + html2canvas to generate a print-ready PDF.\n\nFor now, use "Print Cheque" and select "Save as PDF" as the printer destination.');
+}
+
+// Helpers
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function rgbToHex(rgb) {
+  if (!rgb || rgb === '') return '#1e40af';
+  if (rgb.startsWith('#')) return rgb;
+  const match = rgb.match(/\d+/g);
+  if (!match || match.length < 3) return '#1e40af';
+  return '#' + match.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+}
+
+function updateStatus(msg) {
+  document.getElementById('statusBar').textContent = msg;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoAction(); }
+  if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redoAction(); }
+  if (e.key === 'Delete' && selectedElement && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+    deleteSelected();
+  }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  updateLayers();
+  // Select bank element by default
+  selectElement(document.getElementById('el-bank'));
+});
+  </script>
+
+</body></html>

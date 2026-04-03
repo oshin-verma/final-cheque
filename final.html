@@ -1,0 +1,3447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChequeShield – Cockpit Precision Cheque Printing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --pixels-per-mm: 3.78;
+            --zoom: 1;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        
+        /* GPU-Accelerated Transform Layer */
+        .transform-layer {
+            transform-origin: top left;
+            will-change: transform;
+        }
+        
+        /* Draggable Field */
+        .field-item {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            touch-action: none;
+            transform-origin: top left;
+            will-change: transform;
+            transition: box-shadow 0.2s ease, outline 0.2s ease;
+        }
+
+        .field-item.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .field-item:hover {
+            outline: 2px dashed #93c5fd;
+            box-shadow: 0 0 8px rgba(147, 197, 253, 0.4);
+        }
+
+        .field-item.editing {
+            outline: 2px solid #22c55e;
+            outline-offset: 2px;
+            cursor: text;
+            user-select: text;
+        }
+
+        .field-item .field-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .field-item .field-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: 'Courier New', monospace;
+            font-size: inherit;
+            color: inherit;
+            outline: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .field-item .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: nwse-resize;
+            bottom: -6px;
+            right: -6px;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .field-item.selected .resize-handle {
+            display: block;
+        }
+
+        .field-item .resize-handle:hover {
+            background: #2563eb;
+            transform: scale(1.2);
+        }
+        
+        /* Date Field CSS Grid Comb */
+        .date-grid-comb {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .date-char-box {
+            aspect-ratio: 1;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            background: white;
+            pointer-events: none;
+        }
+        
+        .date-overlay-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: text;
+        }
+        
+        /* Cheque Surface */
+        .cheque-surface {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cheque-surface img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        
+        /* Calibration Modal */
+        .calibration-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .calibration-modal.active {
+            display: flex;
+        }
+        
+        .credit-card-ref {
+            width: 324px; /* 85.6mm * 3.78 */
+            height: 203px; /* 53.98mm * 3.78 */
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            border-radius: 12px;
+            position: relative;
+            margin: 20px auto;
+        }
+        
+        /* Status Bar */
+        #status-bar {
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #cheque-surface, #cheque-surface * {
+                visibility: visible !important;
+            }
+
+            #cheque-surface {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 210mm;
+                height: 148mm;
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            #cheque-container {
+                transform: none !important;
+            }
+
+            .field-item {
+                outline: none !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            .field-item .field-content {
+                display: block !important;
+                overflow: visible !important;
+            }
+
+            .field-item .field-content * {
+                visibility: visible !important;
+                display: block !important;
+            }
+
+            .field-item span {
+                display: inline !important;
+            }
+
+            .resize-handle {
+                display: none !important;
+            }
+
+            #cheque-bg {
+                visibility: visible !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .date-grid-comb {
+                display: grid !important;
+            }
+
+            .date-char-box {
+                visibility: visible !important;
+                border: none !important;
+            }
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        /* View Panels - Positioned over workspace, not covering sidebar */
+        .view-panel {
+            position: fixed;
+            left: 256px;
+            right: 0;
+            top: 64px;
+            bottom: 40px;
+            background: white;
+            z-index: 10;
+            overflow: auto;
+        }
+        
+        body.sidebar-collapsed .view-panel {
+            left: 0;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        /* Memory Engine Widget */
+        .memory-engine {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border-radius: 8px;
+            padding: 12px;
+            color: #e2e8f0;
+        }
+        
+        /* Network Status Indicator */
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .network-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+        
+        .network-dot.offline {
+            background: #ef4444;
+        }
+        
+        /* Zoom Controls */
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Field Info Display */
+        .field-info {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        /* Bulk Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px;
+        }
+        
+        .mode-btn {
+            padding: 4px 12px;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+        
+        .mode-btn.active {
+            background: #3b82f6;
+        }
+        
+        /* Undo/Redo Buttons */
+        .undo-redo-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .undo-redo-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .undo-redo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Button responsive styles */
+        button, .nav-btn, .mode-btn, .zoom-btn, .undo-redo-btn {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active, .nav-btn:active, .mode-btn:active, .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        button:hover, .nav-btn:hover, .mode-btn:hover, .zoom-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        button:focus-visible, .nav-btn:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Touch-friendly improvements */
+        @media (max-width: 768px) {
+            button, .nav-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            .field-item .resize-handle {
+                width: 16px;
+                height: 16px;
+                bottom: -8px;
+                right: -8px;
+            }
+        }
+
+        /* Instruction overlay animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* Canvas workspace */
+        #workspace {
+            overflow: auto;
+            background: #e2e8f0;
+            padding: 20px;
+        }
+        
+        /* Snap indicator */
+        .snap-indicator {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: none;
+            z-index: 100;
+        }
+        
+        .snap-indicator.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-slate-100">
+    <!-- Top Bar -->
+    <header class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center shadow-lg z-50">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="p-2 hover:bg-slate-700 rounded">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div>
+                <h1 class="text-lg font-bold">ChequeShield – Cockpit Precision Cheque Printing</h1>
+                <p class="text-xs text-slate-400">mm-Accurate • Offline-First • CTS-2010 + Section 138 Ready</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <select id="language-select" class="bg-slate-700 text-white px-3 py-1 rounded text-sm">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="bn">বাংলা</option>
+                <option value="or">ଓଡ଼ିଆ</option>
+            </select>
+            <button id="design-mode-toggle" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm flex items-center gap-2">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span data-t="designMode">Design Mode</span>
+            </button>
+            <button id="help-btn" class="p-2 hover:bg-slate-700 rounded">
+                <i data-lucide="help-circle" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar w-64 bg-slate-800 text-white flex-shrink-0 overflow-y-auto">
+            <nav class="p-4 space-y-2">
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="quick-cheque">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    <span data-t="quickCheque">Quick Cheque</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="bulk-builder">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span data-t="bulkBuilder">Bulk Builder</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="register">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span data-t="register">Cheque Register</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="vendor-master">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span data-t="vendorMaster">Vendor Master</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="payment-advice">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span data-t="paymentAdvice">Payment Advice</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="positive-pay">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span data-t="positivePay">Positive Pay</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="section138">
+                    <i data-lucide="file-warning" class="w-5 h-5"></i>
+                    <span data-t="section138">Section 138 Notice</span>
+                </button>
+                
+                <div class="border-t border-slate-600 my-4"></div>
+                
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="templates">
+                    <i data-lucide="layout-template" class="w-5 h-5"></i>
+                    <span data-t="templates">Bank Templates</span>
+                </button>
+                <button class="nav-btn w-full text-left px-4 py-3 hover:bg-slate-700 rounded flex items-center gap-3" data-view="settings">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span data-t="settings">Settings</span>
+                </button>
+            </nav>
+            
+            <!-- Memory Engine Widget -->
+            <div class="p-4">
+                <div class="memory-engine">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                        <span class="text-sm font-semibold" data-t="memoryEngine">Memory Engine</span>
+                    </div>
+                    <div class="text-xs space-y-1">
+                        <div class="flex justify-between">
+                            <span>Templates:</span>
+                            <span id="mem-templates">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Fields:</span>
+                            <span id="mem-fields">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Undo Stack:</span>
+                            <span id="mem-undo">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Toolbar -->
+            <div class="bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-4 flex-shrink-0">
+                <select id="bank-select" class="border border-slate-300 rounded px-3 py-1 text-sm">
+                    <option value="hdfc">HDFC Bank</option>
+                    <option value="icici">ICICI Bank</option>
+                    <option value="axis">Axis Bank</option>
+                    <option value="sbi">State Bank of India</option>
+                    <option value="canon-m240">Canon M-240 Printer</option>
+                    <option value="custom">Custom Template</option>
+                </select>
+                
+                <button id="snap-toggle" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm flex items-center gap-2">
+                    <i data-lucide="magnet" class="w-4 h-4"></i>
+                    <span data-t="snapToGrid">Snap to Grid</span>
+                </button>
+                
+                <button id="bg-upload" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm flex items-center gap-2">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span data-t="uploadBg">Upload BG</span>
+                </button>
+                <input type="file" id="bg-file" accept="image/*" class="hidden">
+                
+                <div class="flex-1"></div>
+                
+                <button id="add-field" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span data-t="addField">Add Field</span>
+                </button>
+            </div>
+
+            <!-- Workspace -->
+            <div id="workspace" class="flex-1 relative">
+                <div id="cheque-container" class="transform-layer mx-auto" style="width: 794px; height: 560px;">
+                    <div id="cheque-surface" class="cheque-surface" style="width: 794px; height: 560px;">
+                        <img id="cheque-bg" src="" alt="Cheque Background">
+                        <!-- Fields will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Snap Indicator -->
+                <div id="snap-indicator" class="snap-indicator">
+                    <i data-lucide="magnet" class="w-4 h-4 inline"></i>
+                    <span data-t="snapped">Snapped to Grid</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <footer id="status-bar" class="fixed bottom-0 left-0 right-0 bg-slate-900 text-white px-4 py-2 flex justify-between items-center text-xs z-50">
+        <!-- Left: Zoom, Calibration -->
+        <div class="flex items-center gap-4">
+            <div class="zoom-control">
+                <button id="zoom-out" class="zoom-btn" title="Zoom Out" data-t-title="zoomOut">
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                </button>
+                <span id="zoom-display">100%</span>
+                <button id="zoom-in" class="zoom-btn" title="Zoom In" data-t-title="zoomIn">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <button id="calibrate-btn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded flex items-center gap-2">
+                <i data-lucide="ruler" class="w-4 h-4"></i>
+                <span data-t="calibrate">Calibrate</span>
+            </button>
+        </div>
+        
+        <!-- Center: Current field info in mm -->
+        <div class="flex items-center gap-4">
+            <div id="field-position" class="field-info">
+                <span data-t="fieldPosition">Position</span>: -- × -- mm
+            </div>
+            <div id="field-size" class="field-info">
+                <span data-t="fieldSize">Size</span>: -- × -- mm
+            </div>
+            <div class="mode-toggle">
+                <button id="single-mode-btn" class="mode-btn active" data-t="singleMode">Single</button>
+                <button id="bulk-mode-btn" class="mode-btn" data-t="bulkMode">Bulk</button>
+            </div>
+        </div>
+        
+        <!-- Right: Export, Network status -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <button id="undo-btn" class="undo-redo-btn" title="Undo (Ctrl+Z)" data-t-title="undo" disabled>
+                    <i data-lucide="undo" class="w-4 h-4"></i>
+                </button>
+                <button id="redo-btn" class="undo-redo-btn" title="Redo (Ctrl+Y)" data-t-title="redo" disabled>
+                    <i data-lucide="redo" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <button id="printer-preview" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span data-t="printerPreview">Printer Preview</span>
+            </button>
+            
+            <button id="export-pdf" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded flex items-center gap-2">
+                <i data-lucide="file-down" class="w-4 h-4"></i>
+                <span data-t="exportPDF">Export PDF</span>
+            </button>
+            
+            <div class="network-status">
+                <div id="network-dot" class="network-dot"></div>
+                <span id="network-text" data-t="networkOffline">Offline</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="calibration-modal">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold" data-t="calibrateTitle">Hardware Calibration</h3>
+                <button id="calibration-close" class="p-2 hover:bg-slate-100 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-slate-600 mb-4" data-t="calibrateDesc">Match the on-screen card to your physical card</p>
+            
+            <div class="credit-card-ref" id="credit-card-ref">
+                <div class="absolute top-4 left-4 text-white text-xs">
+                    <div>DEBIT CARD</div>
+                    <div class="mt-2 font-mono">**** **** **** 1234</div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 mb-2" data-t="creditCardWidth">
+                    Credit/Debit Card Width (85.6mm)
+                </label>
+                <input type="range" id="calibration-slider" min="2" max="6" step="0.1" value="3.78" class="w-full">
+                <div class="text-center text-sm text-slate-600 mt-2">
+                    <span data-t="currentCalibration">Current:</span> <span id="calibration-value">3.78</span> px/mm
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button id="calibration-reset" class="px-4 py-2 border border-slate-300 rounded hover:bg-slate-50">
+                    <span data-t="reset">Reset</span>
+                </button>
+                <button id="calibration-save" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <span data-t="calibrateSave">Save Calibration</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Field Modal -->
+    <div id="add-field-modal" class="modal-overlay">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold" data-t="addField">Add Field</h3>
+                <button class="modal-close p-2 hover:bg-slate-100 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1" data-t="fieldType">Field Type</label>
+                    <select id="field-type" class="w-full border border-slate-300 rounded px-3 py-2">
+                        <option value="text" data-t="text">Text</option>
+                        <option value="date" data-t="date">Date (DDMMYYYY)</option>
+                        <option value="amount" data-t="amount">Amount</option>
+                        <option value="payee" data-t="payee">Payee Name</option>
+                        <option value="signature" data-t="signature">Signature Box</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1" data-t="fieldName">Field Name</label>
+                    <input type="text" id="field-name" class="w-full border border-slate-300 rounded px-3 py-2" placeholder="e.g., Date, Payee, Amount">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1" data-t="defaultValue">Default Value</label>
+                    <input type="text" id="field-default" class="w-full border border-slate-300 rounded px-3 py-2">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="widthMm">Width (mm)</label>
+                        <input type="number" id="field-width" class="w-full border border-slate-300 rounded px-3 py-2" value="50" step="1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="heightMm">Height (mm)</label>
+                        <input type="number" id="field-height" class="w-full border border-slate-300 rounded px-3 py-2" value="10" step="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 mt-6">
+                <button class="modal-cancel px-4 py-2 border border-slate-300 rounded hover:bg-slate-50" data-t="cancel">Cancel</button>
+                <button id="field-create" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" data-t="create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div id="onboarding-modal" class="modal-overlay">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome to ChequeShield</h2>
+                <p class="text-slate-600">Cockpit Precision Cheque Printing</p>
+            </div>
+            
+            <div class="space-y-4 text-slate-700">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 font-bold">1</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-1" data-t="onboard1Title">Calibrate Your Display</h4>
+                        <p class="text-sm" data-t="onboard1Desc">Use the hardware calibration to ensure mm-accurate positioning on your specific monitor.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 font-bold">2</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-1" data-t="onboard2Title">Select Bank Template</h4>
+                        <p class="text-sm" data-t="onboard2Desc">Choose your bank from the dropdown or upload a custom background image.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 font-bold">3</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-1" data-t="onboard3Title">Position Fields</h4>
+                        <p class="text-sm" data-t="onboard3Desc">Drag and resize fields using GPU-accelerated transforms. All positions stored in millimeters.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 font-bold">4</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-1" data-t="onboard4Title">Print or Export</h4>
+                        <p class="text-sm" data-t="onboard4Desc">Use printer preview or export to PDF. Works completely offline.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex justify-center">
+                <button id="onboarding-complete" class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+                    <span data-t="getStarted">Get Started</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Cheque View -->
+    <div id="view-quick-cheque" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="quickCheque">Quick Cheque</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-2xl mx-auto space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="date">Date</label>
+                            <input type="date" id="qc-date" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="amount">Amount</label>
+                            <input type="number" id="qc-amount" class="w-full border border-slate-300 rounded px-3 py-2" step="0.01">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="payee">Payee Name</label>
+                        <input type="text" id="qc-payee" class="w-full border border-slate-300 rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="inWords">In Words</label>
+                        <textarea id="qc-words" class="w-full border border-slate-300 rounded px-3 py-2" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="chequeNumber">Cheque Number</label>
+                        <input type="text" id="qc-number" class="w-full border border-slate-300 rounded px-3 py-2">
+                    </div>
+                    <div class="flex gap-2 pt-4">
+                        <button id="qc-print" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span data-t="print">Print</span>
+                        </button>
+                        <button id="qc-save" class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span data-t="save">Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Builder View -->
+    <div id="view-bulk-builder" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="bulkBuilder">Bulk Builder</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="uploadCSV">Upload CSV</label>
+                        <input type="file" id="bulk-csv" accept=".csv" class="w-full border border-slate-300 rounded px-3 py-2">
+                    </div>
+                    <div class="bg-slate-50 rounded p-4 mb-4">
+                        <p class="text-sm text-slate-600 mb-2" data-t="csvFormat">CSV Format: Date, Payee, Amount, Cheque Number</p>
+                        <code class="text-xs bg-slate-200 px-2 py-1 rounded">2024-01-15,ABC Pvt Ltd,50000.00,123456</code>
+                    </div>
+                    <div id="bulk-preview" class="border border-slate-300 rounded overflow-hidden hidden">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-100">
+                                <tr>
+                                    <th class="px-4 py-2 text-left" data-t="date">Date</th>
+                                    <th class="px-4 py-2 text-left" data-t="payee">Payee</th>
+                                    <th class="px-4 py-2 text-left" data-t="amount">Amount</th>
+                                    <th class="px-4 py-2 text-left" data-t="chequeNumber">Cheque No</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulk-preview-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button id="bulk-process" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" data-t="processBulk">Process Bulk</button>
+                        <button id="bulk-export" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700" data-t="exportAll">Export All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register View -->
+    <div id="view-register" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="register">Cheque Register</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-6xl mx-auto">
+                    <div class="flex justify-between mb-4">
+                        <div class="flex gap-2">
+                            <input type="date" id="reg-from" class="border border-slate-300 rounded px-3 py-2 text-sm">
+                            <span class="self-center">to</span>
+                            <input type="date" id="reg-to" class="border border-slate-300 rounded px-3 py-2 text-sm">
+                        </div>
+                        <button id="reg-export" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm" data-t="export">Export</button>
+                    </div>
+                    <table class="w-full text-sm border border-slate-300">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left border" data-t="date">Date</th>
+                                <th class="px-4 py-2 text-left border" data-t="payee">Payee</th>
+                                <th class="px-4 py-2 text-left border" data-t="amount">Amount</th>
+                                <th class="px-4 py-2 text-left border" data-t="chequeNumber">Cheque No</th>
+                                <th class="px-4 py-2 text-left border" data-t="status">Status</th>
+                                <th class="px-4 py-2 text-left border" data-t="actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="register-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Master View -->
+    <div id="view-vendor-master" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="vendorMaster">Vendor Master</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <button id="vendor-add" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span data-t="addVendor">Add Vendor</span>
+                    </button>
+                    <table class="w-full text-sm border border-slate-300">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left border" data-t="vendorName">Vendor Name</th>
+                                <th class="px-4 py-2 text-left border" data-t="accountNumber">Account Number</th>
+                                <th class="px-4 py-2 text-left border" data-t="ifsc">IFSC</th>
+                                <th class="px-4 py-2 text-left border" data-t="actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendor-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Advice View -->
+    <div id="view-payment-advice" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="paymentAdvice">Payment Advice</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-3xl mx-auto space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="vendor">Vendor</label>
+                        <select id="pa-vendor" class="w-full border border-slate-300 rounded px-3 py-2"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="amount">Amount</label>
+                            <input type="number" id="pa-amount" class="w-full border border-slate-300 rounded px-3 py-2" step="0.01">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="date">Date</label>
+                            <input type="date" id="pa-date" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="narration">Narration</label>
+                        <textarea id="pa-narration" class="w-full border border-slate-300 rounded px-3 py-2" rows="3"></textarea>
+                    </div>
+                    <button id="pa-generate" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" data-t="generateAdvice">Generate Advice</button>
+                    <div id="pa-preview" class="border border-slate-300 rounded p-4 hidden">
+                        <!-- Preview content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Positive Pay View -->
+    <div id="view-positive-pay" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="positivePay">Positive Pay Generator</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
+                        <p class="text-sm text-yellow-800" data-t="positivePayDesc">Positive Pay is a fraud prevention measure. Submit cheque details to your bank before issuing.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="chequeNumber">Cheque Number</label>
+                            <input type="text" id="pp-number" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="date">Date</label>
+                            <input type="date" id="pp-date" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="payee">Payee</label>
+                            <input type="text" id="pp-payee" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="amount">Amount</label>
+                            <input type="number" id="pp-amount" class="w-full border border-slate-300 rounded px-3 py-2" step="0.01">
+                        </div>
+                    </div>
+                    <button id="pp-generate" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" data-t="generatePositivePay">Generate Positive Pay File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 138 Notice View -->
+    <div id="view-section138" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="section138">Section 138 Notice Builder</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="drawerName">Drawer Name</label>
+                            <input type="text" id="s138-drawer" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="drawerAddress">Drawer Address</label>
+                            <input type="text" id="s138-address" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="chequeNumber">Cheque Number</label>
+                            <input type="text" id="s138-number" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="amount">Amount</label>
+                            <input type="number" id="s138-amount" class="w-full border border-slate-300 rounded px-3 py-2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="chequeDate">Cheque Date</label>
+                            <input type="date" id="s138-cheque-date" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1" data-t="returnDate">Return Date</label>
+                            <input type="date" id="s138-return-date" class="w-full border border-slate-300 rounded px-3 py-2">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1" data-t="returnReason">Return Reason</label>
+                        <select id="s138-reason" class="w-full border border-slate-300 rounded px-3 py-2">
+                            <option value="funds">Insufficient Funds</option>
+                            <option value="signature">Signature Mismatch</option>
+                            <option value="alteration">Alteration</option>
+                            <option value="stopped">Payment Stopped</option>
+                        </select>
+                    </div>
+                    <button id="s138-generate" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" data-t="generateNotice">Generate Legal Notice</button>
+                    <div id="s138-preview" class="border border-slate-300 rounded p-4 hidden">
+                        <!-- Preview content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates View -->
+    <div id="view-templates" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="templates">Bank Templates</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="hdfc">
+                            <div class="h-24 bg-blue-50 rounded mb-2 flex items-center justify-center">
+                                <span class="text-blue-600 font-bold">HDFC</span>
+                            </div>
+                            <p class="text-sm font-medium">HDFC Bank</p>
+                        </div>
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="icici">
+                            <div class="h-24 bg-red-50 rounded mb-2 flex items-center justify-center">
+                                <span class="text-red-600 font-bold">ICICI</span>
+                            </div>
+                            <p class="text-sm font-medium">ICICI Bank</p>
+                        </div>
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="axis">
+                            <div class="h-24 bg-purple-50 rounded mb-2 flex items-center justify-center">
+                                <span class="text-purple-600 font-bold">AXIS</span>
+                            </div>
+                            <p class="text-sm font-medium">Axis Bank</p>
+                        </div>
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="sbi">
+                            <div class="h-24 bg-green-50 rounded mb-2 flex items-center justify-center">
+                                <span class="text-green-600 font-bold">SBI</span>
+                            </div>
+                            <p class="text-sm font-medium">State Bank of India</p>
+                        </div>
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="canon-m240">
+                            <div class="h-24 bg-indigo-50 rounded mb-2 flex items-center justify-center">
+                                <span class="text-indigo-600 font-bold">CANON M-240</span>
+                            </div>
+                            <p class="text-sm font-medium">Canon M-240 Printer</p>
+                        </div>
+                        <div class="border border-slate-300 rounded p-4 text-center cursor-pointer hover:bg-slate-50 template-card" data-bank="custom">
+                            <div class="h-24 bg-slate-100 rounded mb-2 flex items-center justify-center">
+                                <i data-lucide="upload" class="w-8 h-8 text-slate-400"></i>
+                            </div>
+                            <p class="text-sm font-medium">Custom Template</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings View -->
+    <div id="view-settings" class="view-panel fixed inset-0 bg-white z-40 hidden">
+        <div class="h-full flex flex-col">
+            <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold" data-t="settings">Settings</h3>
+                <button class="view-close p-2 hover:bg-slate-700 rounded">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div>
+                        <h4 class="font-semibold mb-3" data-t="displaySettings">Display Settings</h4>
+                        <div class="space-y-3">
+                            <button id="settings-calibrate" class="w-full px-4 py-2 border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-2">
+                                <i data-lucide="ruler" class="w-4 h-4"></i>
+                                <span data-t="calibrate">Calibrate Display</span>
+                            </button>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="settings-snap" checked class="rounded">
+                                <span data-t="snapToGrid">Snap to Grid</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="settings-gridlines" class="rounded">
+                                <span data-t="showGridlines">Show Gridlines</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold mb-3" data-t="dataSettings">Data Settings</h4>
+                        <div class="space-y-3">
+                            <button id="settings-export" class="w-full px-4 py-2 border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-2">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span data-t="exportData">Export Data</span>
+                            </button>
+                            <button id="settings-import" class="w-full px-4 py-2 border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-2">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span data-t="importData">Import Data</span>
+                            </button>
+                            <input type="file" id="settings-import-file" accept=".json" class="hidden">
+                            <button id="settings-clear" class="w-full px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 flex items-center gap-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <span data-t="clearAllData">Clear All Data</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold mb-3" data-t="about">About</h4>
+                        <div class="bg-slate-50 rounded p-4 text-sm">
+                            <p class="font-medium">ChequeShield v1.0</p>
+                            <p class="text-slate-600">Cockpit Precision Cheque Printing</p>
+                            <p class="text-slate-500 mt-2">mm-Accurate • Offline-First • CTS-2010 + Section 138 Ready</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // INDEXEDDB WRAPPER WITH LOCALSTORAGE FALLBACK
+        // ============================================
+        class StorageEngine {
+            constructor() {
+                this.dbName = 'ChequeShieldDB';
+                this.dbVersion = 1;
+                this.db = null;
+                this.useIndexedDB = true;
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    this.db = await this.openDB();
+                } catch (e) {
+                    console.warn('IndexedDB not available, falling back to localStorage');
+                    this.useIndexedDB = false;
+                }
+            }
+            
+            openDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('templates')) {
+                            db.createObjectStore('templates', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('fields')) {
+                            db.createObjectStore('fields', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('settings')) {
+                            db.createObjectStore('settings', { keyPath: 'key' });
+                        }
+                        if (!db.objectStoreNames.contains('register')) {
+                            db.createObjectStore('register', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('vendors')) {
+                            db.createObjectStore('vendors', { keyPath: 'id' });
+                        }
+                    };
+                });
+            }
+            
+            async get(storeName, key) {
+                if (!this.useIndexedDB) {
+                    const data = localStorage.getItem(`${this.dbName}_${storeName}_${key}`);
+                    return data ? JSON.parse(data) : null;
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.get(key);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            async set(storeName, data) {
+                if (!this.useIndexedDB) {
+                    localStorage.setItem(`${this.dbName}_${storeName}_${data.id}`, JSON.stringify(data));
+                    return;
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.put(data);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            async getAll(storeName) {
+                if (!this.useIndexedDB) {
+                    const results = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith(`${this.dbName}_${storeName}_`)) {
+                            const data = localStorage.getItem(key);
+                            if (data) {
+                                results.push(JSON.parse(data));
+                            }
+                        }
+                    }
+                    return results;
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.getAll();
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            async delete(storeName, key) {
+                if (!this.useIndexedDB) {
+                    localStorage.removeItem(`${this.dbName}_${storeName}_${key}`);
+                    return;
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.delete(key);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve();
+                });
+            }
+            
+            async clear(storeName) {
+                if (!this.useIndexedDB) {
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith(`${this.dbName}_${storeName}_`)) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
+                    return;
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.clear();
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve();
+                });
+            }
+        }
+        
+        const storage = new StorageEngine();
+        
+        // ============================================
+        // TRANSLATION SYSTEM
+        // ============================================
+        const translations = {
+            en: {
+                // Existing keys
+                designMode: 'Design Mode',
+                quickCheque: 'Quick Cheque',
+                bulkBuilder: 'Bulk Builder',
+                register: 'Cheque Register',
+                vendorMaster: 'Vendor Master',
+                paymentAdvice: 'Payment Advice',
+                positivePay: 'Positive Pay',
+                section138: 'Section 138 Notice',
+                templates: 'Bank Templates',
+                settings: 'Settings',
+                memoryEngine: 'Memory Engine',
+                snapToGrid: 'Snap to Grid',
+                uploadBg: 'Upload BG',
+                addField: 'Add Field',
+                snapped: 'Snapped to Grid',
+                date: 'Date',
+                amount: 'Amount',
+                payee: 'Payee Name',
+                inWords: 'In Words',
+                chequeNumber: 'Cheque Number',
+                print: 'Print',
+                save: 'Save',
+                uploadCSV: 'Upload CSV',
+                csvFormat: 'CSV Format: Date, Payee, Amount, Cheque Number',
+                processBulk: 'Process Bulk',
+                exportAll: 'Export All',
+                status: 'Status',
+                actions: 'Actions',
+                export: 'Export',
+                addVendor: 'Add Vendor',
+                vendorName: 'Vendor Name',
+                accountNumber: 'Account Number',
+                ifsc: 'IFSC',
+                vendor: 'Vendor',
+                narration: 'Narration',
+                generateAdvice: 'Generate Advice',
+                positivePayDesc: 'Positive Pay is a fraud prevention measure. Submit cheque details to your bank before issuing.',
+                generatePositivePay: 'Generate Positive Pay File',
+                drawerName: 'Drawer Name',
+                drawerAddress: 'Drawer Address',
+                chequeDate: 'Cheque Date',
+                returnDate: 'Return Date',
+                returnReason: 'Return Reason',
+                generateNotice: 'Generate Legal Notice',
+                displaySettings: 'Display Settings',
+                calibrate: 'Calibrate',
+                showGridlines: 'Show Gridlines',
+                dataSettings: 'Data Settings',
+                exportData: 'Export Data',
+                importData: 'Import Data',
+                clearAllData: 'Clear All Data',
+                about: 'About',
+                getStarted: 'Get Started',
+                onboard1Title: 'Calibrate Your Display',
+                onboard1Desc: 'Use the hardware calibration to ensure mm-accurate positioning on your specific monitor.',
+                onboard2Title: 'Select Bank Template',
+                onboard2Desc: 'Choose your bank from the dropdown or upload a custom background image.',
+                onboard3Title: 'Position Fields',
+                onboard3Desc: 'Drag and resize fields using GPU-accelerated transforms. All positions stored in millimeters.',
+                onboard4Title: 'Print or Export',
+                onboard4Desc: 'Use printer preview or export to PDF. Works completely offline.',
+                fieldType: 'Field Type',
+                text: 'Text',
+                dateType: 'Date (DDMMYYYY)',
+                amountType: 'Amount',
+                payeeType: 'Payee Name',
+                signature: 'Signature Box',
+                fieldName: 'Field Name',
+                defaultValue: 'Default Value',
+                widthMm: 'Width (mm)',
+                heightMm: 'Height (mm)',
+                cancel: 'Cancel',
+                create: 'Create',
+                
+                // New translation keys
+                calibrateTitle: 'Hardware Calibration',
+                calibrateDesc: 'Match the on-screen card to your physical card',
+                creditCardWidth: 'Credit/Debit Card Width (85.6mm)',
+                calibrateSave: 'Save Calibration',
+                zoomIn: 'Zoom In',
+                zoomOut: 'Zoom Out',
+                exportPDF: 'Export PDF',
+                printerPreview: 'Printer Preview',
+                networkOffline: 'Offline',
+                networkOnline: 'Online',
+                undo: 'Undo',
+                redo: 'Redo',
+                fieldPosition: 'Position',
+                fieldSize: 'Size',
+                bulkMode: 'Bulk Mode',
+                singleMode: 'Single Mode',
+                currentCalibration: 'Current:',
+                reset: 'Reset'
+            },
+            hi: {
+                designMode: 'डिज़ाइन मोड',
+                quickCheque: 'त्वरित चेक',
+                bulkBuilder: 'बल्क बिल्डर',
+                register: 'चेक रजिस्टर',
+                vendorMaster: 'विक्रेता मास्टर',
+                paymentAdvice: 'भुगतान सलाह',
+                positivePay: 'सकारात्मक भुगतान',
+                section138: 'धारा 138 नोटिस',
+                templates: 'बैंक टेम्पलेट',
+                settings: 'सेटिंग्स',
+                memoryEngine: 'मेमोरी इंजन',
+                snapToGrid: 'ग्रिड से स्नैप',
+                uploadBg: 'बैकग्राउंड अपलोड',
+                addField: 'फील्ड जोड़ें',
+                snapped: 'ग्रिड से स्नैप',
+                date: 'दिनांक',
+                amount: 'राशि',
+                payee: 'भुगतानकर्ता',
+                inWords: 'शब्दों में',
+                chequeNumber: 'चेक नंबर',
+                print: 'प्रिंट',
+                save: 'सहेजें',
+                uploadCSV: 'CSV अपलोड',
+                csvFormat: 'CSV प्रारूप: दिनांक, भुगतानकर्ता, राशि, चेक नंबर',
+                processBulk: 'बल्क प्रोसेस',
+                exportAll: 'सभी निर्यात',
+                status: 'स्थिति',
+                actions: 'क्रियाएं',
+                export: 'निर्यात',
+                addVendor: 'विक्रेता जोड़ें',
+                vendorName: 'विक्रेता का नाम',
+                accountNumber: 'खाता संख्या',
+                ifsc: 'IFSC',
+                vendor: 'विक्रेता',
+                narration: 'विवरण',
+                generateAdvice: 'सलाह जनरेट',
+                positivePayDesc: 'सकारात्मक भुगतान एक धोखाधड़ी रोकथाम उपाय है। जारी करने से पहले अपने बैंक को चेक विवरण जमा करें।',
+                generatePositivePay: 'सकारात्मक भुगतान फ़ाइल जनरेट',
+                drawerName: 'ड्रॉअर का नाम',
+                drawerAddress: 'ड्रॉअर का पता',
+                chequeDate: 'चेक दिनांक',
+                returnDate: 'वापसी दिनांक',
+                returnReason: 'वापसी कारण',
+                generateNotice: 'कानूनी नोटिस जनरेट',
+                displaySettings: 'डिस्प्ले सेटिंग्स',
+                calibrate: 'कैलिब्रेट',
+                showGridlines: 'ग्रिडलाइन दिखाएं',
+                dataSettings: 'डेटा सेटिंग्स',
+                exportData: 'डेटा निर्यात',
+                importData: 'डेटा आयात',
+                clearAllData: 'सभी डेटा साफ करें',
+                about: 'के बारे में',
+                getStarted: 'शुरू करें',
+                onboard1Title: 'अपने डिस्प्ले को कैलिब्रेट करें',
+                onboard1Desc: 'अपने विशिष्ट मॉनिटर पर मिमी-सटीक स्थिति सुनिश्चित करने के लिए हार्डवेयर कैलिब्रेशन का उपयोग करें।',
+                onboard2Title: 'बैंक टेम्पलेट चुनें',
+                onboard2Desc: 'ड्रॉपडाउन से अपना बैंक चुनें या कस्टम बैकग्राउंड इमेज अपलोड करें।',
+                onboard3Title: 'फील्ड स्थिति',
+                onboard3Desc: 'GPU-त्वरित ट्रांसफॉर्म का उपयोग करके फ़ील्ड खींचें और आकार बदलें। सभी स्थितियां मिलीमीटर में संग्रहीत।',
+                onboard4Title: 'प्रिंट या निर्यात',
+                onboard4Desc: 'प्रिंटर पूर्वावलोकन का उपयोग करें या PDF में निर्यात करें। पूरी तरह ऑफ़लाइन काम करता है।',
+                fieldType: 'फील्ड प्रकार',
+                text: 'टेक्स्ट',
+                dateType: 'दिनांक (DDMMYYYY)',
+                amountType: 'राशि',
+                payeeType: 'भुगतानकर्ता का नाम',
+                signature: 'हस्ताक्षर बॉक्स',
+                fieldName: 'फील्ड नाम',
+                defaultValue: 'डिफ़ॉल्ट मान',
+                widthMm: 'चौड़ाई (mm)',
+                heightMm: 'ऊंचाई (mm)',
+                cancel: 'रद्द करें',
+                create: 'बनाएं',
+                
+                // New translation keys
+                calibrateTitle: 'हार्डवेयर कैलिब्रेशन',
+                calibrateDesc: 'ऑन-स्क्रीन कार्ड को अपने भौतिक कार्ड से मिलाएं',
+                creditCardWidth: 'क्रेडिट/डेबिट कार्ड चौड़ाई (85.6mm)',
+                calibrateSave: 'कैलिब्रेशन सहेजें',
+                zoomIn: 'ज़ूम इन',
+                zoomOut: 'ज़ूम आउट',
+                exportPDF: 'PDF निर्यात',
+                printerPreview: 'प्रिंटर पूर्वावलोकन',
+                networkOffline: 'ऑफ़लाइन',
+                networkOnline: 'ऑनलाइन',
+                undo: 'पूर्ववत',
+                redo: 'पुनः करें',
+                fieldPosition: 'स्थिति',
+                fieldSize: 'आकार',
+                bulkMode: 'बल्क मोड',
+                singleMode: 'सिंगल मोड',
+                currentCalibration: 'वर्तमान:',
+                reset: 'रीसेट'
+            },
+            bn: {
+                designMode: 'ডিজাইন মোড',
+                quickCheque: 'দ্রুত চেক',
+                bulkBuilder: 'বাল্ক বিল্ডার',
+                register: 'চেক রেজিস্টার',
+                vendorMaster: 'ভেন্ডর মাস্টার',
+                paymentAdvice: 'পেমেন্ট পরামর্শ',
+                positivePay: 'পজিটিভ পে',
+                section138: 'ধারা ১৩৮ নোটিশ',
+                templates: 'ব্যাংক টেমপ্লেট',
+                settings: 'সেটিংস',
+                memoryEngine: 'মেমোরি ইঞ্জিন',
+                snapToGrid: 'গ্রিডে স্ন্যাপ',
+                uploadBg: 'ব্যাকগ্রাউন্ড আপলোড',
+                addField: 'ফিল্ড যোগ করুন',
+                snapped: 'গ্রিডে স্ন্যাপ',
+                date: 'তারিখ',
+                amount: 'পরিমাণ',
+                payee: 'প্রাপক',
+                inWords: 'কথায়',
+                chequeNumber: 'চেক নম্বর',
+                print: 'প্রিন্ট',
+                save: 'সংরক্ষণ',
+                uploadCSV: 'CSV আপলোড',
+                csvFormat: 'CSV ফরম্যাট: তারিখ, প্রাপক, পরিমাণ, চেক নম্বর',
+                processBulk: 'বাল্ক প্রসেস',
+                exportAll: 'সব এক্সপোর্ট',
+                status: 'অবস্থা',
+                actions: 'ক্রিয়া',
+                export: 'এক্সপোর্ট',
+                addVendor: 'ভেন্ডর যোগ করুন',
+                vendorName: 'ভেন্ডর নাম',
+                accountNumber: 'অ্যাকাউন্ট নম্বর',
+                ifsc: 'IFSC',
+                vendor: 'ভেন্ডর',
+                narration: 'বিবরণ',
+                generateAdvice: 'পরামর্শ তৈরি',
+                positivePayDesc: 'পজিটিভ পে একটি জালিয়াতি প্রতিরোধ ব্যবস্থা। জারি করার আগে আপনার ব্যাংকে চেকের বিবরণ জমা দিন।',
+                generatePositivePay: 'পজিটিভ পে ফাইল তৈরি',
+                drawerName: 'ড্রয়ার নাম',
+                drawerAddress: 'ড্রয়ার ঠিকানা',
+                chequeDate: 'চেক তারিখ',
+                returnDate: 'রিটার্ন তারিখ',
+                returnReason: 'রিটার্ন কারণ',
+                generateNotice: 'আইনি নোটিশ তৈরি',
+                displaySettings: 'ডিসপ্লে সেটিংস',
+                calibrate: 'ক্যালিব্রেট',
+                showGridlines: 'গ্রিডলাইন দেখান',
+                dataSettings: 'ডেটা সেটিংস',
+                exportData: 'ডেটা এক্সপোর্ট',
+                importData: 'ডেটা ইমপোর্ট',
+                clearAllData: 'সব ডেটা মুছুন',
+                about: 'সম্পর্কে',
+                getStarted: 'শুরু করুন',
+                onboard1Title: 'আপনার ডিসপ্লে ক্যালিব্রেট করুন',
+                onboard1Desc: 'আপনার নির্দিষ্ট মনিটরে মিমি-সঠিক অবস্থান নিশ্চিত করতে হার্ডওয়্যার ক্যালিব্রেশন ব্যবহার করুন।',
+                onboard2Title: 'ব্যাংক টেমপ্লেট নির্বাচন করুন',
+                onboard2Desc: 'ড্রপডাউন থেকে আপনার ব্যাংক নির্বাচন করুন বা কাস্টম ব্যাকগ্রাউন্ড ইমেজ আপলোড করুন।',
+                onboard3Title: 'ফিল্ড অবস্থান',
+                onboard3Desc: 'GPU-ত্বরিত ট্রান্সফর্ম ব্যবহার করে ফিল্ড টানুন এবং আকার পরিবর্তন করুন। সমস্ত অবস্থান মিলিমিটারে সংরক্ষিত।',
+                onboard4Title: 'প্রিন্ট বা এক্সপোর্ট',
+                onboard4Desc: 'প্রিন্টার প্রিভিউ ব্যবহার করুন বা PDF-এ এক্সপোর্ট করুন। সম্পূর্ণ অফলাইনে কাজ করে।',
+                fieldType: 'ফিল্ড টাইপ',
+                text: 'টেক্সট',
+                dateType: 'তারিখ (DDMMYYYY)',
+                amountType: 'পরিমাণ',
+                payeeType: 'প্রাপক নাম',
+                signature: 'স্বাক্ষর বক্স',
+                fieldName: 'ফিল্ড নাম',
+                defaultValue: 'ডিফল্ট মান',
+                widthMm: 'প্রস্থ (mm)',
+                heightMm: 'উচ্চতা (mm)',
+                cancel: 'বাতিল',
+                create: 'তৈরি',
+                
+                // New translation keys
+                calibrateTitle: 'হার্ডওয়্যার ক্যালিব্রেশন',
+                calibrateDesc: 'অন-স্ক্রিন কার্ডকে আপনার শারীরিক কার্ডের সাথে মেলান',
+                creditCardWidth: 'ক্রেডিট/ডেবিট কার্ড প্রস্থ (85.6mm)',
+                calibrateSave: 'ক্যালিব্রেশন সংরক্ষণ',
+                zoomIn: 'জুম ইন',
+                zoomOut: 'জুম আউট',
+                exportPDF: 'PDF এক্সপোর্ট',
+                printerPreview: 'প্রিন্টার প্রিভিউ',
+                networkOffline: 'অফলাইন',
+                networkOnline: 'অনলাইন',
+                undo: 'পূর্বাবস্থায়',
+                redo: 'পুনরায়',
+                fieldPosition: 'অবস্থান',
+                fieldSize: 'আকার',
+                bulkMode: 'বাল্ক মোড',
+                singleMode: 'সিঙ্গেল মোড',
+                currentCalibration: 'বর্তমান:',
+                reset: 'রিসেট'
+            },
+            or: {
+                designMode: 'ଡିଜାଇନ ମୋଡ',
+                quickCheque: 'ଦ୍ରୁତ ଚେକ',
+                bulkBuilder: 'ବଲ୍କ ବିଲ୍ଡର',
+                register: 'ଚେକ ରେଜିଷ୍ଟର',
+                vendorMaster: 'ଭେଣ୍ଡର ମାଷ୍ଟର',
+                paymentAdvice: 'ପେମେଣ୍ଟ ପରାମର୍ଶ',
+                positivePay: 'ପଜିଟିଭ୍ ପେ',
+                section138: 'ଧାରା ୧୩୮ ନୋଟିସ',
+                templates: 'ବ୍ୟାଙ୍କ ଟେମ୍ପଲେଟ',
+                settings: 'ସେଟିଂସ',
+                memoryEngine: 'ମେମୋରି ଇଞ୍ଜିନ',
+                snapToGrid: 'ଗ୍ରିଡରେ ସ୍ନାପ',
+                uploadBg: 'ବ୍ୟାକଗ୍ରାଉଣ୍ଡ ଅପଲୋଡ',
+                addField: 'ଫିଲ୍ଡ ଯୋଡନ୍ତୁ',
+                snapped: 'ଗ୍ରିଡରେ ସ୍ନାପ',
+                date: 'ତାରିଖ',
+                amount: 'ପରିମାଣ',
+                payee: 'ପ୍ରାପକ',
+                inWords: 'ଶବ୍ଦରେ',
+                chequeNumber: 'ଚେକ ନମ୍ବର',
+                print: 'ପ୍ରିଣ୍ଟ',
+                save: 'ସଂରକ୍ଷଣ',
+                uploadCSV: 'CSV ଅପଲୋଡ',
+                csvFormat: 'CSV ଫର୍ମାଟ: ତାରିଖ, ପ୍ରାପକ, ପରିମାଣ, ଚେକ ନମ୍ବର',
+                processBulk: 'ବଲ୍କ ପ୍ରୋସେସ',
+                exportAll: 'ସମସ୍ତ ଏକ୍ସପୋର୍ଟ',
+                status: 'ଅବସ୍ଥା',
+                actions: 'କାର୍ଯ୍ୟ',
+                export: 'ଏକ୍ସପୋର୍ଟ',
+                addVendor: 'ଭେଣ୍ଡର ଯୋଡନ୍ତୁ',
+                vendorName: 'ଭେଣ୍ଡର ନାମ',
+                accountNumber: 'ଆକାଉଣ୍ଟ ନମ୍ବର',
+                ifsc: 'IFSC',
+                vendor: 'ଭେଣ୍ଡର',
+                narration: 'ବିବରଣୀ',
+                generateAdvice: 'ପରାମର୍ଶ ସୃଷ୍ଟି',
+                positivePayDesc: 'ପଜିଟିଭ୍ ପେ ଏକ ପ୍ରତାରଣା ପ୍ରତିରୋଧ ବ୍ୟବସ୍ଥା। ଜାରି କରିବା ପୂର୍ବରୁ ଆପଣଙ୍କ ବ୍ୟାଙ୍କରେ ଚେକ ବିବରଣୀ ଜମା କରନ୍ତୁ।',
+                generatePositivePay: 'ପଜିଟିଭ୍ ପେ ଫାଇଲ ସୃଷ୍ଟି',
+                drawerName: 'ଡ୍ରୟର ନାମ',
+                drawerAddress: 'ଡ୍ରୟର ଠିକଣା',
+                chequeDate: 'ଚେକ ତାରିଖ',
+                returnDate: 'ରିଟର୍ନ ତାରିଖ',
+                returnReason: 'ରିଟର୍ନ କାରଣ',
+                generateNotice: 'ଆଇନଗତ ନୋଟିସ ସୃଷ୍ଟି',
+                displaySettings: 'ଡିସପ୍ଲେ ସେଟିଂସ',
+                calibrate: 'କାଲିବ୍ରେଟ',
+                showGridlines: 'ଗ୍ରିଡଲାଇନ ଦେଖାନ୍ତୁ',
+                dataSettings: 'ଡେଟା ସେଟିଂସ',
+                exportData: 'ଡେଟା ଏକ୍ସପୋର୍ଟ',
+                importData: 'ଡେଟା ଇମପୋର୍ଟ',
+                clearAllData: 'ସମସ୍ତ ଡେଟା ସାଫ କରନ୍ତୁ',
+                about: 'ସମ୍ବନ୍ଧରେ',
+                getStarted: 'ଆରମ୍ଭ କରନ୍ତୁ',
+                onboard1Title: 'ଆପଣଙ୍କ ଡିସପ୍ଲେ କାଲିବ୍ରେଟ କରନ୍ତୁ',
+                onboard1Desc: 'ଆପଣଙ୍କ ନିର୍ଦ୍ଦିଷ୍ଟ ମନିଟରରେ ମିମି-ସଠିକ୍ ସ୍ଥାନ ନିଶ୍ଚିତ କରିବା ପାଇଁ ହାର୍ଡୱେର କାଲିବ୍ରେସନ ବ୍ୟବହାର କରନ୍ତୁ।',
+                onboard2Title: 'ବ୍ୟାଙ୍କ ଟେମ୍ପଲେଟ ଚୟନ କରନ୍ତୁ',
+                onboard2Desc: 'ଡ୍ରପଡାଉନରୁ ଆପଣଙ୍କ ବ୍ୟାଙ୍କ ଚୟନ କରନ୍ତୁ ବା କଷ୍ଟମ ବ୍ୟାକଗ୍ରାଉଣ୍ଡ ଇମେଜ ଅପଲୋଡ କରନ୍ତୁ।',
+                onboard3Title: 'ଫିଲ୍ଡ ସ୍ଥାନ',
+                onboard3Desc: 'GPU-ତ୍ୱରାନ୍ୱିତ ଟ୍ରାନ୍ସଫର୍ମ ବ୍ୟବହାର କରି ଫିଲ୍ଡ ଟାଣନ୍ତୁ ଏବଂ ଆକାର ପରିବର୍ତ୍ତନ କରନ୍ତୁ। ସମସ୍ତ ସ୍ଥାନ ମିଲିମିଟରରେ ସଂରକ୍ଷିତ।',
+                onboard4Title: 'ପ୍ରିଣ୍ଟ କିମ୍ବା ଏକ୍ସପୋର୍ଟ',
+                onboard4Desc: 'ପ୍ରିଣ୍ଟର ପ୍ରିଭିଉ ବ୍ୟବହାର କରନ୍ତୁ କିମ୍ବା PDF କୁ ଏକ୍ସପୋର୍ଟ କରନ୍ତୁ। ସମ୍ପୂର୍ଣ୍ଣ ଅଫଲାଇନରେ କାମ କରେ।',
+                fieldType: 'ଫିଲ୍ଡ ପ୍ରକାର',
+                text: 'ଟେକ୍ସଟ',
+                dateType: 'ତାରିଖ (DDMMYYYY)',
+                amountType: 'ପରିମାଣ',
+                payeeType: 'ପ୍ରାପକ ନାମ',
+                signature: 'ସ୍ୱାକ୍ଷର ବକ୍ସ',
+                fieldName: 'ଫିଲ୍ଡ ନାମ',
+                defaultValue: 'ଡିଫଲ୍ଟ ମାନ',
+                widthMm: 'ପ୍ରସ୍ଥ (mm)',
+                heightMm: 'ଉଚ୍ଚତା (mm)',
+                cancel: 'ବାତିଲ',
+                create: 'ସୃଷ୍ଟି',
+                
+                // New translation keys
+                calibrateTitle: 'ହାର୍ଡୱେର କାଲିବ୍ରେସନ',
+                calibrateDesc: 'ଅନ-ସ୍କ୍ରିନ କାର୍ଡକୁ ଆପଣଙ୍କର ଭୌତିକ କାର୍ଡ ସହିତ ମେଳ କରନ୍ତୁ',
+                creditCardWidth: 'କ୍ରେଡିଟ/ଡେବିଟ କାର୍ଡ ପ୍ରସ୍ଥ (85.6mm)',
+                calibrateSave: 'କାଲିବ୍ରେସନ ସଂରକ୍ଷଣ',
+                zoomIn: 'ଜୁମ ଇନ',
+                zoomOut: 'ଜୁମ ଆଉଟ',
+                exportPDF: 'PDF ଏକ୍ସପୋର୍ଟ',
+                printerPreview: 'ପ୍ରିଣ୍ଟର ପ୍ରିଭିଉ',
+                networkOffline: 'ଅଫଲାଇନ',
+                networkOnline: 'ଅନଲାଇନ',
+                undo: 'ପୂର୍ବବତ୍ତ',
+                redo: 'ପୁନଃ କରନ୍ତୁ',
+                fieldPosition: 'ସ୍ଥାନ',
+                fieldSize: 'ଆକାର',
+                bulkMode: 'ବଲ୍କ ମୋଡ',
+                singleMode: 'ସିଙ୍ଗଲ ମୋଡ',
+                currentCalibration: 'ବର୍ତ୍ତମାନ:',
+                reset: 'ରିସେଟ'
+            }
+        };
+        
+        let currentLang = 'en';
+        
+        function t(key) {
+            return translations[currentLang][key] || translations['en'][key] || key;
+        }
+        
+        function updateTranslations() {
+            document.querySelectorAll('[data-t]').forEach(el => {
+                const key = el.getAttribute('data-t');
+                el.textContent = t(key);
+            });
+            
+            document.querySelectorAll('[data-t-title]').forEach(el => {
+                const key = el.getAttribute('data-t-title');
+                el.setAttribute('title', t(key));
+            });
+        }
+        
+        // ============================================
+        // COMMAND PATTERN - UNDO/REDO SYSTEM
+        // ============================================
+        class Command {
+            execute() {}
+            undo() {}
+        }
+        
+        class MoveCommand extends Command {
+            constructor(fieldId, fromX, fromY, toX, toY) {
+                super();
+                this.fieldId = fieldId;
+                this.fromX = fromX;
+                this.fromY = fromY;
+                this.toX = toX;
+                this.toY = toY;
+            }
+            
+            execute() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset.x = this.toX;
+                    field.dataset.y = this.toY;
+                    updateFieldTransform(field);
+                }
+            }
+            
+            undo() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset.x = this.fromX;
+                    field.dataset.y = this.fromY;
+                    updateFieldTransform(field);
+                }
+            }
+        }
+        
+        class ResizeCommand extends Command {
+            constructor(fieldId, fromWidth, fromHeight, toWidth, toHeight) {
+                super();
+                this.fieldId = fieldId;
+                this.fromWidth = fromWidth;
+                this.fromHeight = fromHeight;
+                this.toWidth = toWidth;
+                this.toHeight = toHeight;
+            }
+            
+            execute() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset.width = this.toWidth;
+                    field.dataset.height = this.toHeight;
+                    updateFieldSize(field);
+                }
+            }
+            
+            undo() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset.width = this.fromWidth;
+                    field.dataset.height = this.fromHeight;
+                    updateFieldSize(field);
+                }
+            }
+        }
+        
+        class DeleteCommand extends Command {
+            constructor(fieldId, fieldElement, parent) {
+                super();
+                this.fieldId = fieldId;
+                this.fieldElement = fieldElement;
+                this.parent = parent;
+            }
+            
+            execute() {
+                if (this.fieldElement && this.fieldElement.parentNode) {
+                    this.fieldElement.parentNode.removeChild(this.fieldElement);
+                }
+            }
+            
+            undo() {
+                if (this.parent && this.fieldElement) {
+                    this.parent.appendChild(this.fieldElement);
+                }
+            }
+        }
+        
+        class StyleCommand extends Command {
+            constructor(fieldId, property, fromValue, toValue) {
+                super();
+                this.fieldId = fieldId;
+                this.property = property;
+                this.fromValue = fromValue;
+                this.toValue = toValue;
+            }
+            
+            execute() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset[this.property] = this.toValue;
+                    applyFieldStyle(field, this.property, this.toValue);
+                }
+            }
+            
+            undo() {
+                const field = document.querySelector(`[data-field-id="${this.fieldId}"]`);
+                if (field) {
+                    field.dataset[this.property] = this.fromValue;
+                    applyFieldStyle(field, this.property, this.fromValue);
+                }
+            }
+        }
+        
+        class CommandManager {
+            constructor() {
+                this.undoStack = [];
+                this.redoStack = [];
+                this.maxStackSize = 50;
+            }
+            
+            execute(command) {
+                command.execute();
+                this.undoStack.push(command);
+                if (this.undoStack.length > this.maxStackSize) {
+                    this.undoStack.shift();
+                }
+                this.redoStack = [];
+                this.updateButtons();
+                this.updateMemoryEngine();
+            }
+            
+            undo() {
+                if (this.undoStack.length === 0) return false;
+                const command = this.undoStack.pop();
+                command.undo();
+                this.redoStack.push(command);
+                this.updateButtons();
+                this.updateMemoryEngine();
+                return true;
+            }
+            
+            redo() {
+                if (this.redoStack.length === 0) return false;
+                const command = this.redoStack.pop();
+                command.execute();
+                this.undoStack.push(command);
+                this.updateButtons();
+                this.updateMemoryEngine();
+                return true;
+            }
+            
+            updateButtons() {
+                document.getElementById('undo-btn').disabled = this.undoStack.length === 0;
+                document.getElementById('redo-btn').disabled = this.redoStack.length === 0;
+            }
+            
+            updateMemoryEngine() {
+                document.getElementById('mem-undo').textContent = this.undoStack.length;
+            }
+        }
+        
+        const commandManager = new CommandManager();
+        
+        // ============================================
+        // CALIBRATION & ZOOM SYSTEM
+        // ============================================
+        let pixelsPerMillimeter = 3.78;
+        let currentZoom = 1;
+        
+        function loadCalibration() {
+            const saved = localStorage.getItem('chequeshield_calibration');
+            if (saved) {
+                pixelsPerMillimeter = parseFloat(saved);
+            }
+            document.getElementById('calibration-slider').value = pixelsPerMillimeter;
+            document.getElementById('calibration-value').textContent = pixelsPerMillimeter.toFixed(2);
+        }
+        
+        function saveCalibration() {
+            localStorage.setItem('chequeshield_calibration', pixelsPerMillimeter.toString());
+            updateChequeSurface();
+        }
+        
+        function updateChequeSurface() {
+            const container = document.getElementById('cheque-container');
+            const surface = document.getElementById('cheque-surface');
+            
+            // Standard cheque size: 210mm x 148mm (CTS-2010)
+            const widthMm = 210;
+            const heightMm = 148;
+            
+            const widthPx = widthMm * pixelsPerMillimeter * currentZoom;
+            const heightPx = heightMm * pixelsPerMillimeter * currentZoom;
+            
+            container.style.width = `${widthPx}px`;
+            container.style.height = `${heightPx}px`;
+            surface.style.width = `${widthPx}px`;
+            surface.style.height = `${heightPx}px`;
+            
+            // Update all field positions
+            document.querySelectorAll('.field-item').forEach(field => {
+                updateFieldTransform(field);
+            });
+        }
+        
+        function setZoom(zoom) {
+            currentZoom = Math.max(0.5, Math.min(2, zoom));
+            document.getElementById('zoom-display').textContent = `${Math.round(currentZoom * 100)}%`;
+            updateChequeSurface();
+        }
+        
+        // ============================================
+        // FIELD MANAGEMENT
+        // ============================================
+        let selectedField = null;
+        let fieldCounter = 0;
+        
+        function createField(type, name, defaultValue, widthMm, heightMm, xMm = 10, yMm = 10) {
+            const field = document.createElement('div');
+            field.className = 'field-item';
+            field.dataset.fieldId = `field-${++fieldCounter}`;
+            field.dataset.type = type;
+            field.dataset.name = name;
+            field.dataset.defaultValue = defaultValue || '';
+            field.dataset.x = xMm;
+            field.dataset.y = yMm;
+            field.dataset.width = widthMm;
+            field.dataset.height = heightMm;
+            field.dataset.fontSize = '14';
+            field.dataset.fontFamily = 'Courier New, monospace';
+            field.dataset.color = '#000000';
+
+            // Set initial transform
+            updateFieldTransform(field);
+            updateFieldSize(field);
+
+            // Create field content based on type
+            updateFieldContent(field);
+
+            // Add resize handle
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            field.appendChild(resizeHandle);
+
+            // Add event listeners
+            field.addEventListener('mousedown', onFieldMouseDown);
+            field.addEventListener('dblclick', onFieldDblClick);
+            resizeHandle.addEventListener('mousedown', onResizeMouseDown);
+
+            // Touch events
+            field.addEventListener('touchstart', onFieldTouchStart, { passive: false });
+            resizeHandle.addEventListener('touchstart', onResizeTouchStart, { passive: false });
+
+            document.getElementById('cheque-surface').appendChild(field);
+
+            return field;
+        }
+        
+        function createDateGridComb(value) {
+            const formatted = (value || '').replace(/\D/g, '').padEnd(8, ' ').slice(0, 8);
+            let html = '<div class="date-grid-comb">';
+            for (let i = 0; i < 8; i++) {
+                html += `<div class="date-char-box">${formatted[i] || ''}</div>`;
+            }
+            html += '<input type="text" class="date-overlay-input" maxlength="8" pattern="\\d*">';
+            html += '</div>';
+            return html;
+        }
+        
+        function updateFieldTransform(field) {
+            const x = parseFloat(field.dataset.x) * pixelsPerMillimeter * currentZoom;
+            const y = parseFloat(field.dataset.y) * pixelsPerMillimeter * currentZoom;
+            field.style.transform = `translate(${x}px, ${y}px)`;
+        }
+        
+        function updateFieldSize(field) {
+            const width = parseFloat(field.dataset.width) * pixelsPerMillimeter * currentZoom;
+            const height = parseFloat(field.dataset.height) * pixelsPerMillimeter * currentZoom;
+            field.style.width = `${width}px`;
+            field.style.height = `${height}px`;
+        }
+
+        function updateFieldContent(field) {
+            const type = field.dataset.type;
+            const defaultValue = field.dataset.defaultValue || '';
+            const fontSize = field.dataset.fontSize || '14';
+            const fontFamily = field.dataset.fontFamily || 'Courier New, monospace';
+            const color = field.dataset.color || '#000000';
+
+            // Remove old content but keep resize handle
+            const resizeHandle = field.querySelector('.resize-handle');
+            field.innerHTML = '';
+
+            const content = document.createElement('div');
+            content.className = 'field-content';
+            content.style.fontSize = `${fontSize}px`;
+            content.style.fontFamily = fontFamily;
+            content.style.color = color;
+
+            if (type === 'date') {
+                content.innerHTML = createDateGridComb(defaultValue);
+            } else if (type === 'amount') {
+                content.innerHTML = `<span class="font-mono">₹ ${defaultValue || '0.00'}</span>`;
+            } else if (type === 'signature') {
+                content.innerHTML = `<div class="w-full h-full border-2 border-dashed border-slate-400 flex items-center justify-center text-slate-400 text-xs">Signature</div>`;
+            } else {
+                content.innerHTML = `<span>${defaultValue || ''}</span>`;
+            }
+
+            field.appendChild(content);
+            if (resizeHandle) {
+                field.appendChild(resizeHandle);
+            } else {
+                const newResizeHandle = document.createElement('div');
+                newResizeHandle.className = 'resize-handle';
+                field.appendChild(newResizeHandle);
+            }
+        }
+
+        function enableFieldEditing(field) {
+            if (!designMode) return;
+            
+            const type = field.dataset.type;
+            const content = field.querySelector('.field-content');
+            if (!content) return;
+
+            // Don't edit signature boxes
+            if (type === 'signature') return;
+
+            field.classList.add('editing');
+            
+            const currentValue = field.dataset.defaultValue || '';
+            
+            if (type === 'date') {
+                // For date fields, show a simple input
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'field-input';
+                input.value = currentValue;
+                input.maxLength = 8;
+                input.pattern = '\\d*';
+                input.style.fontFamily = 'Courier New, monospace';
+                input.style.textAlign = 'center';
+                
+                content.innerHTML = '';
+                content.appendChild(input);
+                input.focus();
+                input.select();
+                
+                input.addEventListener('blur', () => finishFieldEditing(field, input.value));
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    } else if (e.key === 'Escape') {
+                        input.value = currentValue;
+                        input.blur();
+                    }
+                });
+            } else {
+                // For other fields, make content editable
+                const span = content.querySelector('span');
+                if (span) {
+                    span.contentEditable = 'true';
+                    span.focus();
+                    
+                    // Select all text
+                    const range = document.createRange();
+                    range.selectNodeContents(span);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    
+                    const finishEditing = () => {
+                        span.contentEditable = 'false';
+                        finishFieldEditing(field, span.textContent);
+                    };
+                    
+                    span.addEventListener('blur', finishEditing, { once: true });
+                    span.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            span.blur();
+                        } else if (e.key === 'Escape') {
+                            span.textContent = currentValue;
+                            span.blur();
+                        }
+                    });
+                }
+            }
+        }
+
+        function finishFieldEditing(field, newValue) {
+            field.classList.remove('editing');
+            const oldValue = field.dataset.defaultValue;
+            
+            if (newValue !== oldValue) {
+                field.dataset.defaultValue = newValue;
+                
+                // Create command for undo/redo
+                const command = new StyleCommand(
+                    field.dataset.fieldId,
+                    'defaultValue',
+                    oldValue,
+                    newValue
+                );
+                commandManager.execute(command);
+                
+                // Update display
+                updateFieldContent(field);
+            } else {
+                updateFieldContent(field);
+            }
+        }
+        
+        function applyFieldStyle(field, property, value) {
+            // Apply style changes based on property
+            if (property === 'fontSize') {
+                field.style.fontSize = `${value}px`;
+            } else if (property === 'fontFamily') {
+                field.style.fontFamily = value;
+            } else if (property === 'color') {
+                field.style.color = value;
+            }
+        }
+        
+        function selectField(field) {
+            if (selectedField) {
+                selectedField.classList.remove('selected');
+            }
+            selectedField = field;
+            if (field) {
+                field.classList.add('selected');
+                updateFieldInfo(field);
+            } else {
+                clearFieldInfo();
+            }
+        }
+        
+        function updateFieldInfo(field) {
+            const x = parseFloat(field.dataset.x).toFixed(1);
+            const y = parseFloat(field.dataset.y).toFixed(1);
+            const width = parseFloat(field.dataset.width).toFixed(1);
+            const height = parseFloat(field.dataset.height).toFixed(1);
+            
+            document.getElementById('field-position').innerHTML = `${t('fieldPosition')}: ${x} × ${y} mm`;
+            document.getElementById('field-size').innerHTML = `${t('fieldSize')}: ${width} × ${height} mm`;
+        }
+        
+        function clearFieldInfo() {
+            document.getElementById('field-position').innerHTML = `${t('fieldPosition')}: -- × -- mm`;
+            document.getElementById('field-size').innerHTML = `${t('fieldSize')}: -- × -- mm`;
+        }
+        
+        // ============================================
+        // DRAG AND DROP (TRANSFORM-BASED)
+        // ============================================
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartFieldX = 0;
+        let dragStartFieldY = 0;
+        let dragField = null;
+
+        function onFieldMouseDown(e) {
+            if (e.target.classList.contains('resize-handle')) return;
+            if (!document.getElementById('design-mode-toggle').classList.contains('bg-blue-600')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            dragField = e.currentTarget;
+            selectField(dragField);
+
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            dragStartFieldX = parseFloat(dragField.dataset.x);
+            dragStartFieldY = parseFloat(dragField.dataset.y);
+
+            document.addEventListener('mousemove', onDragMouseMove);
+            document.addEventListener('mouseup', onDragMouseUp);
+        }
+
+        function onFieldDblClick(e) {
+            if (!designMode) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const field = e.currentTarget;
+            selectField(field);
+            enableFieldEditing(field);
+        }
+
+        // Touch support for drag and drop
+        let touchDragField = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartFieldX = 0;
+        let touchStartFieldY = 0;
+        let isTouchDragging = false;
+
+        function onFieldTouchStart(e) {
+            if (e.target.classList.contains('resize-handle')) return;
+            if (!designMode) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            touchDragField = e.currentTarget;
+            selectField(touchDragField);
+
+            const touch = e.touches[0];
+            isTouchDragging = true;
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartFieldX = parseFloat(touchDragField.dataset.x);
+            touchStartFieldY = parseFloat(touchDragField.dataset.y);
+
+            document.addEventListener('touchmove', onTouchDragMove, { passive: false });
+            document.addEventListener('touchend', onTouchDragEnd);
+        }
+
+        function onTouchDragMove(e) {
+            if (!isTouchDragging || !touchDragField) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const deltaX = (touch.clientX - touchStartX) / (pixelsPerMillimeter * currentZoom);
+            const deltaY = (touch.clientY - touchStartY) / (pixelsPerMillimeter * currentZoom);
+
+            let newX = touchStartFieldX + deltaX;
+            let newY = touchStartFieldY + deltaY;
+
+            // Snap to grid
+            if (document.getElementById('snap-toggle').classList.contains('bg-slate-200')) {
+                const snap = 1;
+                newX = Math.round(newX / snap) * snap;
+                newY = Math.round(newY / snap) * snap;
+                showSnapIndicator();
+            }
+
+            touchDragField.dataset.x = newX.toFixed(2);
+            touchDragField.dataset.y = newY.toFixed(2);
+            updateFieldTransform(touchDragField);
+            updateFieldInfo(touchDragField);
+        }
+
+        function onTouchDragEnd(e) {
+            if (!isTouchDragging || !touchDragField) return;
+
+            const newX = parseFloat(touchDragField.dataset.x);
+            const newY = parseFloat(touchDragField.dataset.y);
+
+            if (Math.abs(newX - touchStartFieldX) > 0.01 || Math.abs(newY - touchStartFieldY) > 0.01) {
+                const command = new MoveCommand(
+                    touchDragField.dataset.fieldId,
+                    touchStartFieldX.toFixed(2),
+                    touchStartFieldY.toFixed(2),
+                    newX.toFixed(2),
+                    newY.toFixed(2)
+                );
+                commandManager.execute(command);
+            }
+
+            isTouchDragging = false;
+            touchDragField = null;
+            hideSnapIndicator();
+
+            document.removeEventListener('touchmove', onTouchDragMove);
+            document.removeEventListener('touchend', onTouchDragEnd);
+        }
+        
+        function onDragMouseMove(e) {
+            if (!isDragging || !dragField) return;
+            
+            const deltaX = (e.clientX - dragStartX) / (pixelsPerMillimeter * currentZoom);
+            const deltaY = (e.clientY - dragStartY) / (pixelsPerMillimeter * currentZoom);
+            
+            let newX = dragStartFieldX + deltaX;
+            let newY = dragStartFieldY + deltaY;
+            
+            // Snap to grid
+            if (document.getElementById('snap-toggle').classList.contains('bg-slate-200')) {
+                const snap = 1; // 1mm grid
+                newX = Math.round(newX / snap) * snap;
+                newY = Math.round(newY / snap) * snap;
+                showSnapIndicator();
+            }
+            
+            dragField.dataset.x = newX.toFixed(2);
+            dragField.dataset.y = newY.toFixed(2);
+            updateFieldTransform(dragField);
+            updateFieldInfo(dragField);
+        }
+        
+        function onDragMouseUp(e) {
+            if (!isDragging || !dragField) return;
+            
+            const newX = parseFloat(dragField.dataset.x);
+            const newY = parseFloat(dragField.dataset.y);
+            
+            // Only create command if position changed
+            if (Math.abs(newX - dragStartFieldX) > 0.01 || Math.abs(newY - dragStartFieldY) > 0.01) {
+                const command = new MoveCommand(
+                    dragField.dataset.fieldId,
+                    dragStartFieldX.toFixed(2),
+                    dragStartFieldY.toFixed(2),
+                    newX.toFixed(2),
+                    newY.toFixed(2)
+                );
+                commandManager.execute(command);
+            }
+            
+            isDragging = false;
+            dragField = null;
+            hideSnapIndicator();
+            
+            document.removeEventListener('mousemove', onDragMouseMove);
+            document.removeEventListener('mouseup', onDragMouseUp);
+        }
+        
+        // ============================================
+        // RESIZE (TRANSFORM-BASED)
+        // ============================================
+        let isResizing = false;
+        let resizeStartX = 0;
+        let resizeStartY = 0;
+        let resizeStartWidth = 0;
+        let resizeStartHeight = 0;
+        let resizeField = null;
+        
+        function onResizeMouseDown(e) {
+            if (!document.getElementById('design-mode-toggle').classList.contains('bg-blue-600')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            resizeField = e.currentTarget.closest('.field-item');
+
+            isResizing = true;
+            resizeStartX = e.clientX;
+            resizeStartY = e.clientY;
+            resizeStartWidth = parseFloat(resizeField.dataset.width);
+            resizeStartHeight = parseFloat(resizeField.dataset.height);
+
+            document.addEventListener('mousemove', onResizeMouseMove);
+            document.addEventListener('mouseup', onResizeMouseUp);
+        }
+
+        // Touch support for resize
+        let touchResizeField = null;
+        let touchResizeStartX = 0;
+        let touchResizeStartY = 0;
+        let touchResizeStartWidth = 0;
+        let touchResizeStartHeight = 0;
+        let isTouchResizing = false;
+
+        function onResizeTouchStart(e) {
+            if (!designMode) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            touchResizeField = e.currentTarget.closest('.field-item');
+
+            const touch = e.touches[0];
+            isTouchResizing = true;
+            touchResizeStartX = touch.clientX;
+            touchResizeStartY = touch.clientY;
+            touchResizeStartWidth = parseFloat(touchResizeField.dataset.width);
+            touchResizeStartHeight = parseFloat(touchResizeField.dataset.height);
+
+            document.addEventListener('touchmove', onTouchResizeMove, { passive: false });
+            document.addEventListener('touchend', onTouchResizeEnd);
+        }
+
+        function onTouchResizeMove(e) {
+            if (!isTouchResizing || !touchResizeField) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const deltaX = (touch.clientX - touchResizeStartX) / (pixelsPerMillimeter * currentZoom);
+            const deltaY = (touch.clientY - touchResizeStartY) / (pixelsPerMillimeter * currentZoom);
+
+            let newWidth = Math.max(5, touchResizeStartWidth + deltaX);
+            let newHeight = Math.max(5, touchResizeStartHeight + deltaY);
+
+            if (document.getElementById('snap-toggle').classList.contains('bg-slate-200')) {
+                const snap = 1;
+                newWidth = Math.round(newWidth / snap) * snap;
+                newHeight = Math.round(newHeight / snap) * snap;
+            }
+
+            touchResizeField.dataset.width = newWidth.toFixed(2);
+            touchResizeField.dataset.height = newHeight.toFixed(2);
+            updateFieldSize(touchResizeField);
+            updateFieldInfo(touchResizeField);
+        }
+
+        function onTouchResizeEnd(e) {
+            if (!isTouchResizing || !touchResizeField) return;
+
+            const newWidth = parseFloat(touchResizeField.dataset.width);
+            const newHeight = parseFloat(touchResizeField.dataset.height);
+
+            if (Math.abs(newWidth - touchResizeStartWidth) > 0.01 || Math.abs(newHeight - touchResizeStartHeight) > 0.01) {
+                const command = new ResizeCommand(
+                    touchResizeField.dataset.fieldId,
+                    touchResizeStartWidth.toFixed(2),
+                    touchResizeStartHeight.toFixed(2),
+                    newWidth.toFixed(2),
+                    newHeight.toFixed(2)
+                );
+                commandManager.execute(command);
+            }
+
+            isTouchResizing = false;
+            touchResizeField = null;
+
+            document.removeEventListener('touchmove', onTouchResizeMove);
+            document.removeEventListener('touchend', onTouchResizeEnd);
+        }
+        
+        function onResizeMouseMove(e) {
+            if (!isResizing || !resizeField) return;
+            
+            const deltaX = (e.clientX - resizeStartX) / (pixelsPerMillimeter * currentZoom);
+            const deltaY = (e.clientY - resizeStartY) / (pixelsPerMillimeter * currentZoom);
+            
+            let newWidth = Math.max(5, resizeStartWidth + deltaX);
+            let newHeight = Math.max(5, resizeStartHeight + deltaY);
+            
+            // Snap to grid
+            if (document.getElementById('snap-toggle').classList.contains('bg-slate-200')) {
+                const snap = 1;
+                newWidth = Math.round(newWidth / snap) * snap;
+                newHeight = Math.round(newHeight / snap) * snap;
+            }
+            
+            resizeField.dataset.width = newWidth.toFixed(2);
+            resizeField.dataset.height = newHeight.toFixed(2);
+            updateFieldSize(resizeField);
+            updateFieldInfo(resizeField);
+        }
+        
+        function onResizeMouseUp(e) {
+            if (!isResizing || !resizeField) return;
+            
+            const newWidth = parseFloat(resizeField.dataset.width);
+            const newHeight = parseFloat(resizeField.dataset.height);
+            
+            if (Math.abs(newWidth - resizeStartWidth) > 0.01 || Math.abs(newHeight - resizeStartHeight) > 0.01) {
+                const command = new ResizeCommand(
+                    resizeField.dataset.fieldId,
+                    resizeStartWidth.toFixed(2),
+                    resizeStartHeight.toFixed(2),
+                    newWidth.toFixed(2),
+                    newHeight.toFixed(2)
+                );
+                commandManager.execute(command);
+            }
+            
+            isResizing = false;
+            resizeField = null;
+            
+            document.removeEventListener('mousemove', onResizeMouseMove);
+            document.removeEventListener('mouseup', onResizeMouseUp);
+        }
+        
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Z - Undo
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                commandManager.undo();
+                return;
+            }
+            
+            // Ctrl+Y - Redo
+            if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                commandManager.redo();
+                return;
+            }
+            
+            // Delete - Remove selected field
+            if (e.key === 'Delete' && selectedField) {
+                e.preventDefault();
+                deleteSelectedField();
+                return;
+            }
+            
+            // Arrow keys - Nudge
+            if (selectedField && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const step = e.shiftKey ? 10 : 1;
+                nudgeField(step, e.key);
+                return;
+            }
+            
+            // +/- - Zoom
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                setZoom(currentZoom + 0.1);
+                return;
+            }
+            if (e.key === '-') {
+                e.preventDefault();
+                setZoom(currentZoom - 0.1);
+                return;
+            }
+            
+            // Tab - Navigate between fields
+            if (e.key === 'Tab' && !e.target.closest('input, select, textarea')) {
+                e.preventDefault();
+                navigateFields(e.shiftKey ? -1 : 1);
+                return;
+            }
+        });
+        
+        function nudgeField(step, direction) {
+            if (!selectedField) return;
+            
+            const oldX = parseFloat(selectedField.dataset.x);
+            const oldY = parseFloat(selectedField.dataset.y);
+            let newX = oldX;
+            let newY = oldY;
+            
+            switch (direction) {
+                case 'ArrowUp': newY -= step / (pixelsPerMillimeter * currentZoom); break;
+                case 'ArrowDown': newY += step / (pixelsPerMillimeter * currentZoom); break;
+                case 'ArrowLeft': newX -= step / (pixelsPerMillimeter * currentZoom); break;
+                case 'ArrowRight': newX += step / (pixelsPerMillimeter * currentZoom); break;
+            }
+            
+            selectedField.dataset.x = newX.toFixed(2);
+            selectedField.dataset.y = newY.toFixed(2);
+            updateFieldTransform(selectedField);
+            updateFieldInfo(selectedField);
+            
+            const command = new MoveCommand(
+                selectedField.dataset.fieldId,
+                oldX.toFixed(2),
+                oldY.toFixed(2),
+                newX.toFixed(2),
+                newY.toFixed(2)
+            );
+            commandManager.execute(command);
+        }
+        
+        function navigateFields(direction) {
+            const fields = Array.from(document.querySelectorAll('.field-item'));
+            if (fields.length === 0) return;
+            
+            let currentIndex = fields.indexOf(selectedField);
+            if (currentIndex === -1) currentIndex = -1;
+            
+            let newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = fields.length - 1;
+            if (newIndex >= fields.length) newIndex = 0;
+            
+            selectField(fields[newIndex]);
+        }
+        
+        function deleteSelectedField() {
+            if (!selectedField) return;
+            
+            const parent = selectedField.parentNode;
+            const fieldElement = selectedField;
+            const fieldId = selectedField.dataset.fieldId;
+            
+            const command = new DeleteCommand(fieldId, fieldElement, parent);
+            commandManager.execute(command);
+            
+            selectField(null);
+        }
+        
+        // ============================================
+        // SNAP INDICATOR
+        // ============================================
+        function showSnapIndicator() {
+            const indicator = document.getElementById('snap-indicator');
+            indicator.classList.add('active');
+            setTimeout(() => indicator.classList.remove('active'), 500);
+        }
+        
+        function hideSnapIndicator() {
+            document.getElementById('snap-indicator').classList.remove('active');
+        }
+        
+        // ============================================
+        // CALIBRATION MODAL
+        // ============================================
+        function openCalibrationModal() {
+            document.getElementById('calibration-modal').classList.add('active');
+        }
+        
+        function closeCalibrationModal() {
+            document.getElementById('calibration-modal').classList.remove('active');
+        }
+        
+        document.getElementById('calibration-slider').addEventListener('input', (e) => {
+            pixelsPerMillimeter = parseFloat(e.target.value);
+            document.getElementById('calibration-value').textContent = pixelsPerMillimeter.toFixed(2);
+            document.getElementById('credit-card-ref').style.width = `${85.6 * pixelsPerMillimeter}px`;
+            document.getElementById('credit-card-ref').style.height = `${53.98 * pixelsPerMillimeter}px`;
+        });
+        
+        document.getElementById('calibration-save').addEventListener('click', () => {
+            saveCalibration();
+            closeCalibrationModal();
+        });
+        
+        document.getElementById('calibration-reset').addEventListener('click', () => {
+            pixelsPerMillimeter = 3.78;
+            document.getElementById('calibration-slider').value = 3.78;
+            document.getElementById('calibration-value').textContent = '3.78';
+            document.getElementById('credit-card-ref').style.width = `${85.6 * 3.78}px`;
+            document.getElementById('credit-card-ref').style.height = `${53.98 * 3.78}px`;
+        });
+        
+        document.getElementById('calibration-close').addEventListener('click', closeCalibrationModal);
+        
+        // ============================================
+        // ZOOM CONTROLS
+        // ============================================
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            setZoom(currentZoom + 0.1);
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            setZoom(currentZoom - 0.1);
+        });
+        
+        // ============================================
+        // NETWORK STATUS
+        // ============================================
+        function updateNetworkStatus() {
+            const dot = document.getElementById('network-dot');
+            const text = document.getElementById('network-text');
+            
+            if (navigator.onLine) {
+                dot.classList.remove('offline');
+                text.textContent = t('networkOnline');
+            } else {
+                dot.classList.add('offline');
+                text.textContent = t('networkOffline');
+            }
+        }
+        
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        
+        // ============================================
+        // EXPORT PDF (jsPDF)
+        // ============================================
+        async function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            // Create PDF with cheque dimensions (210mm x 148mm)
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [210, 148]
+            });
+            
+            // Capture the cheque surface
+            const chequeSurface = document.getElementById('cheque-surface');
+            
+            // Use html2canvas-like approach or render text
+            // For simplicity, we'll add text content
+            pdf.setFontSize(10);
+            pdf.text('ChequeShield Export', 10, 10);
+            pdf.text(`Date: ${new Date().toLocaleDateString()}`, 10, 20);
+            
+            // Add field positions
+            let y = 30;
+            document.querySelectorAll('.field-item').forEach(field => {
+                const name = field.dataset.name || 'Field';
+                const x = field.dataset.x;
+                const y_mm = field.dataset.y;
+                const width = field.dataset.width;
+                const height = field.dataset.height;
+                pdf.text(`${name}: ${x}x${y_mm}mm (${width}x${height}mm)`, 10, y);
+                y += 5;
+            });
+            
+            pdf.save(`chequeshield-export-${Date.now()}.pdf`);
+        }
+        
+        document.getElementById('export-pdf').addEventListener('click', exportToPDF);
+        
+        // ============================================
+        // PRINTER PREVIEW
+        // ============================================
+        document.getElementById('printer-preview').addEventListener('click', () => {
+            window.print();
+        });
+        
+        // ============================================
+        // BULK/SINGLE MODE TOGGLE
+        // ============================================
+        let bulkMode = false;
+        
+        document.getElementById('single-mode-btn').addEventListener('click', () => {
+            bulkMode = false;
+            document.getElementById('single-mode-btn').classList.add('active');
+            document.getElementById('bulk-mode-btn').classList.remove('active');
+        });
+        
+        document.getElementById('bulk-mode-btn').addEventListener('click', () => {
+            bulkMode = true;
+            document.getElementById('bulk-mode-btn').classList.add('active');
+            document.getElementById('single-mode-btn').classList.remove('active');
+        });
+        
+        // ============================================
+        // DESIGN MODE TOGGLE
+        // ============================================
+        let designMode = true;
+        
+        document.getElementById('design-mode-toggle').addEventListener('click', () => {
+            designMode = !designMode;
+            const btn = document.getElementById('design-mode-toggle');
+            
+            if (designMode) {
+                btn.classList.add('bg-blue-600');
+                btn.classList.remove('bg-slate-600');
+            } else {
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-slate-600');
+                selectField(null);
+            }
+        });
+        
+        // ============================================
+        // ADD FIELD MODAL
+        // ============================================
+        document.getElementById('add-field').addEventListener('click', () => {
+            document.getElementById('add-field-modal').classList.add('active');
+        });
+        
+        document.querySelectorAll('#add-field-modal .modal-close, #add-field-modal .modal-cancel').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('add-field-modal').classList.remove('active');
+            });
+        });
+        
+        document.getElementById('field-create').addEventListener('click', () => {
+            const type = document.getElementById('field-type').value;
+            const name = document.getElementById('field-name').value || type;
+            const defaultValue = document.getElementById('field-default').value;
+            const width = parseFloat(document.getElementById('field-width').value) || 50;
+            const height = parseFloat(document.getElementById('field-height').value) || 10;
+            
+            createField(type, name, defaultValue, width, height);
+            document.getElementById('add-field-modal').classList.remove('active');
+            
+            // Clear form
+            document.getElementById('field-name').value = '';
+            document.getElementById('field-default').value = '';
+        });
+        
+        // ============================================
+        // LANGUAGE SELECTOR
+        // ============================================
+        document.getElementById('language-select').addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            updateTranslations();
+        });
+        
+        // ============================================
+        // SIDEBAR TOGGLE
+        // ============================================
+        document.getElementById('sidebar-toggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+        
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Special case: Bank Templates opens index.html
+                if (btn.dataset.view === 'templates') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Remove active class from all nav buttons
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-slate-700', 'active'));
+                // Add active class to clicked button
+                btn.classList.add('bg-slate-700', 'active');
+
+                const view = btn.dataset.view;
+                // Hide all view panels first
+                document.querySelectorAll('.view-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                // Show the selected view
+                const targetView = document.getElementById(`view-${view}`);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Set Quick Cheque as default active view
+        document.querySelector('[data-view="quick-cheque"]').classList.add('bg-slate-700', 'active');
+
+        document.querySelectorAll('.view-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.view-panel').classList.add('hidden');
+            });
+        });
+        
+        // ============================================
+        // BACKGROUND UPLOAD
+        // ============================================
+        document.getElementById('bg-upload').addEventListener('click', () => {
+            document.getElementById('bg-file').click();
+        });
+        
+        document.getElementById('bg-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('cheque-bg').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // ============================================
+        // SNAP TO GRID TOGGLE
+        // ============================================
+        document.getElementById('snap-toggle').addEventListener('click', () => {
+            document.getElementById('snap-toggle').classList.toggle('bg-slate-200');
+            document.getElementById('snap-toggle').classList.toggle('bg-slate-100');
+            document.getElementById('settings-snap').checked = document.getElementById('snap-toggle').classList.contains('bg-slate-200');
+        });
+        
+        // ============================================
+        // ONBOARDING
+        // ============================================
+        function showOnboarding() {
+            const shown = localStorage.getItem('chequeshield_onboarding_shown');
+            if (!shown) {
+                document.getElementById('onboarding-modal').classList.add('active');
+            }
+        }
+        
+        document.getElementById('onboarding-complete').addEventListener('click', () => {
+            localStorage.setItem('chequeshield_onboarding_shown', 'true');
+            document.getElementById('onboarding-modal').classList.remove('active');
+        });
+        
+        // ============================================
+        // BANK TEMPLATES
+        // ============================================
+        const bankTemplates = {
+            hdfc: 'hdfc-real-cheque-bg.svg',
+            icici: 'icici-real-cheque-bg.svg',
+            axis: 'axis-real-cheque-bg.svg',
+            sbi: 'sbi-real-cheque-bg.svg',
+            'canon-m240': 'canon-m240-cheque-bg.svg',
+            custom: ''
+        };
+        
+        document.getElementById('bank-select').addEventListener('change', (e) => {
+            const bank = e.target.value;
+            const template = bankTemplates[bank];
+            if (template) {
+                document.getElementById('cheque-bg').src = template;
+            } else {
+                document.getElementById('cheque-bg').src = '';
+            }
+        });
+        
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const bank = card.dataset.bank;
+                document.getElementById('bank-select').value = bank;
+                const template = bankTemplates[bank];
+                if (template) {
+                    document.getElementById('cheque-bg').src = template;
+                } else {
+                    document.getElementById('cheque-bg').src = '';
+                }
+                card.closest('.view-panel').classList.add('hidden');
+            });
+        });
+        
+        // ============================================
+        // MEMORY ENGINE
+        // ============================================
+        function updateMemoryEngine() {
+            const templates = localStorage.getItem('chequeshield_templates') || '[]';
+            const fields = document.querySelectorAll('.field-item').length;
+            
+            document.getElementById('mem-templates').textContent = JSON.parse(templates).length;
+            document.getElementById('mem-fields').textContent = fields;
+            document.getElementById('mem-undo').textContent = commandManager.undoStack.length;
+        }
+        
+        // ============================================
+        // UNDO/REDO BUTTONS
+        // ============================================
+        document.getElementById('undo-btn').addEventListener('click', () => {
+            commandManager.undo();
+        });
+        
+        document.getElementById('redo-btn').addEventListener('click', () => {
+            commandManager.redo();
+        });
+        
+        // ============================================
+        // CALIBRATION BUTTON
+        // ============================================
+        document.getElementById('calibrate-btn').addEventListener('click', openCalibrationModal);
+        document.getElementById('settings-calibrate').addEventListener('click', () => {
+            document.getElementById('view-settings').classList.add('hidden');
+            openCalibrationModal();
+        });
+        
+        // ============================================
+        // CLICK ON WORKSPACE TO DESELECT
+        // ============================================
+        document.getElementById('workspace').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('workspace') || e.target === document.getElementById('cheque-container')) {
+                selectField(null);
+            }
+        });
+
+        // ============================================
+        // QUICK CHEQUE VIEW BUTTONS
+        // ============================================
+        document.getElementById('qc-print')?.addEventListener('click', () => {
+            const date = document.getElementById('qc-date').value;
+            const amount = document.getElementById('qc-amount').value;
+            const payee = document.getElementById('qc-payee').value;
+            const number = document.getElementById('qc-number').value;
+
+            // Update fields with Quick Cheque data
+            document.querySelectorAll('.field-item').forEach(field => {
+                if (field.dataset.type === 'date' && date) {
+                    field.dataset.defaultValue = date.replace(/-/g, '');
+                } else if (field.dataset.type === 'amount' && amount) {
+                    field.dataset.defaultValue = amount;
+                } else if (field.dataset.type === 'payee' && payee) {
+                    field.dataset.defaultValue = payee;
+                }
+            });
+
+            // Re-render all updated fields
+            document.querySelectorAll('.field-item').forEach(field => {
+                updateFieldContent(field);
+            });
+
+            window.print();
+        });
+
+        document.getElementById('qc-save')?.addEventListener('click', () => {
+            const data = {
+                date: document.getElementById('qc-date').value,
+                amount: document.getElementById('qc-amount').value,
+                payee: document.getElementById('qc-payee').value,
+                number: document.getElementById('qc-number').value
+            };
+            localStorage.setItem('chequeshield_quick_cheque', JSON.stringify(data));
+            
+            // Update fields with Quick Cheque data
+            document.querySelectorAll('.field-item').forEach(field => {
+                if (field.dataset.type === 'date' && data.date) {
+                    field.dataset.defaultValue = data.date.replace(/-/g, '');
+                } else if (field.dataset.type === 'amount' && data.amount) {
+                    field.dataset.defaultValue = data.amount;
+                } else if (field.dataset.type === 'payee' && data.payee) {
+                    field.dataset.defaultValue = data.payee;
+                }
+            });
+
+            // Re-render all updated fields
+            document.querySelectorAll('.field-item').forEach(field => {
+                updateFieldContent(field);
+            });
+            
+            alert('Quick Cheque data saved successfully!');
+        });
+
+        // ============================================
+        // BULK BUILDER VIEW BUTTONS
+        // ============================================
+        document.getElementById('bulk-csv')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const text = event.target.result;
+                    const lines = text.split('\n').filter(line => line.trim());
+                    const tbody = document.getElementById('bulk-preview-body');
+                    tbody.innerHTML = '';
+                    
+                    lines.slice(1).forEach(line => {
+                        const [date, payee, amount, number] = line.split(',');
+                        if (date && payee) {
+                            const row = `<tr class="border-t">
+                                <td class="px-4 py-2">${date || ''}</td>
+                                <td class="px-4 py-2">${payee || ''}</td>
+                                <td class="px-4 py-2">${amount || ''}</td>
+                                <td class="px-4 py-2">${number || ''}</td>
+                            </tr>`;
+                            tbody.innerHTML += row;
+                        }
+                    });
+                    
+                    document.getElementById('bulk-preview').classList.remove('hidden');
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('bulk-process')?.addEventListener('click', () => {
+            alert('Bulk processing initiated. Cheques will be generated sequentially.');
+        });
+
+        document.getElementById('bulk-export')?.addEventListener('click', () => {
+            exportToPDF();
+        });
+
+        // ============================================
+        // REGISTER VIEW BUTTONS
+        // ============================================
+        document.getElementById('reg-export')?.addEventListener('click', () => {
+            alert('Register export functionality - Export to CSV/PDF');
+        });
+
+        // ============================================
+        // VENDOR MASTER VIEW BUTTONS
+        // ============================================
+        document.getElementById('vendor-add')?.addEventListener('click', () => {
+            const name = prompt('Enter Vendor Name:');
+            if (name) {
+                const tbody = document.getElementById('vendor-body');
+                const row = `<tr class="border-t">
+                    <td class="px-4 py-2">${name}</td>
+                    <td class="px-4 py-2">-</td>
+                    <td class="px-4 py-2">-</td>
+                    <td class="px-4 py-2"><button class="text-blue-600 hover:underline">Edit</button> | <button class="text-red-600 hover:underline">Delete</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        });
+
+        // ============================================
+        // PAYMENT ADVICE VIEW BUTTONS
+        // ============================================
+        document.getElementById('pa-generate')?.addEventListener('click', () => {
+            const vendor = document.getElementById('pa-vendor').value;
+            const amount = document.getElementById('pa-amount').value;
+            const date = document.getElementById('pa-date').value;
+            const narration = document.getElementById('pa-narration').value;
+            
+            const preview = document.getElementById('pa-preview');
+            preview.innerHTML = `
+                <h4 class="font-bold mb-2">Payment Advice</h4>
+                <p><strong>Vendor:</strong> ${vendor}</p>
+                <p><strong>Amount:</strong> ₹${amount}</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Narration:</strong> ${narration}</p>
+            `;
+            preview.classList.remove('hidden');
+        });
+
+        // ============================================
+        // POSITIVE PAY VIEW BUTTONS
+        // ============================================
+        document.getElementById('pp-generate')?.addEventListener('click', () => {
+            const number = document.getElementById('pp-number').value;
+            const date = document.getElementById('pp-date').value;
+            const payee = document.getElementById('pp-payee').value;
+            const amount = document.getElementById('pp-amount').value;
+            
+            const content = `
+                POSITIVE PAY FILE
+                -----------------
+                Cheque No: ${number}
+                Date: ${date}
+                Payee: ${payee}
+                Amount: ₹${amount}
+                
+                Submit this to your bank before issuing the cheque.
+            `;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `positive-pay-${number}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // ============================================
+        // SECTION 138 NOTICE VIEW BUTTONS
+        // ============================================
+        document.getElementById('s138-generate')?.addEventListener('click', () => {
+            const drawer = document.getElementById('s138-drawer').value;
+            const address = document.getElementById('s138-address').value;
+            const number = document.getElementById('s138-number').value;
+            const amount = document.getElementById('s138-amount').value;
+            const chequeDate = document.getElementById('s138-cheque-date').value;
+            const returnDate = document.getElementById('s138-return-date').value;
+            const reason = document.getElementById('s138-reason').value;
+            
+            const preview = document.getElementById('s138-preview');
+            preview.innerHTML = `
+                <h4 class="font-bold mb-4">LEGAL NOTICE UNDER SECTION 138</h4>
+                <p><strong>To,</strong><br>${drawer}<br>${address}</p>
+                <p><strong>Subject:</strong> Notice for dishonour of cheque</p>
+                <p>Dear Sir/Madam,</p>
+                <p>This is to inform you that cheque bearing number ${number} dated ${chequeDate} for ₹${amount} has been returned unpaid with the reason: ${reason}.</p>
+                <p>You are hereby called upon to make the payment within 15 days from the receipt of this notice.</p>
+                <p>Date of Return: ${returnDate}</p>
+            `;
+            preview.classList.remove('hidden');
+        });
+
+        // ============================================
+        // SETTINGS VIEW BUTTONS
+        // ============================================
+        document.getElementById('settings-export')?.addEventListener('click', () => {
+            const data = {
+                templates: localStorage.getItem('chequeshield_templates'),
+                calibration: localStorage.getItem('chequeshield_calibration'),
+                quickCheque: localStorage.getItem('chequeshield_quick_cheque')
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chequeshield-backup-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('settings-import')?.addEventListener('click', () => {
+            document.getElementById('settings-import-file').click();
+        });
+
+        document.getElementById('settings-import-file')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.templates) localStorage.setItem('chequeshield_templates', data.templates);
+                        if (data.calibration) localStorage.setItem('chequeshield_calibration', data.calibration);
+                        if (data.quickCheque) localStorage.setItem('chequeshield_quick_cheque', data.quickCheque);
+                        alert('Data imported successfully!');
+                    } catch (err) {
+                        alert('Error importing data: Invalid JSON file');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('settings-clear')?.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                localStorage.clear();
+                alert('All data cleared. Page will now reload.');
+                location.reload();
+            }
+        });
+
+        // ============================================
+        // HELP BUTTON
+        // ============================================
+        document.getElementById('help-btn')?.addEventListener('click', () => {
+            showOnboarding();
+        });
+
+        // ============================================
+        // ENHANCED BUTTON RESPONSIVENESS
+        // ============================================
+        function enhanceButtonResponsiveness() {
+            // Add ripple effect to all buttons
+            document.querySelectorAll('button, .nav-btn, .mode-btn, .zoom-btn, .undo-redo-btn').forEach(btn => {
+                // Skip if already enhanced
+                if (btn.dataset.enhanced) return;
+                btn.dataset.enhanced = 'true';
+
+                // Add active state class on click
+                btn.addEventListener('mousedown', function() {
+                    this.style.transform = 'scale(0.96)';
+                });
+
+                btn.addEventListener('mouseup', function() {
+                    this.style.transform = 'scale(1)';
+                });
+
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+
+                // Touch feedback
+                btn.addEventListener('touchstart', function() {
+                    this.style.opacity = '0.7';
+                }, { passive: true });
+
+                btn.addEventListener('touchend', function() {
+                    this.style.opacity = '1';
+                }, { passive: true });
+
+                // Keyboard accessibility
+                btn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+        }
+
+        // Add loading state helper
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.dataset.originalText = button.innerHTML;
+                button.innerHTML = '<span class="inline-block animate-spin mr-2">⟳</span> Loading...';
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.cursor = 'not-allowed';
+            } else {
+                button.innerHTML = button.dataset.originalText || button.innerHTML;
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+            }
+        }
+
+        // Enhance all buttons after DOM is ready
+        setTimeout(enhanceButtonResponsiveness, 100);
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            // Load calibration
+            loadCalibration();
+
+            // Initialize zoom
+            setZoom(1);
+
+            // Update translations
+            updateTranslations();
+
+            // Update network status
+            updateNetworkStatus();
+
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Show onboarding
+            showOnboarding();
+
+            // Show Quick Cheque view by default
+            document.querySelectorAll('.view-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            const quickChequeView = document.getElementById('view-quick-cheque');
+            if (quickChequeView) {
+                quickChequeView.classList.remove('hidden');
+            }
+
+            // Create sample fields
+            createField('date', 'Date', '', 60, 10, 20, 20);
+            createField('payee', 'Payee', '', 100, 10, 20, 50);
+            createField('amount', 'Amount', '0.00', 80, 10, 20, 80);
+
+            // Update memory engine
+            updateMemoryEngine();
+
+            // Set default background - Canon M-240 Printer
+            document.getElementById('bank-select').value = 'canon-m240';
+            document.getElementById('cheque-bg').src = 'canon-m240-cheque-bg.svg';
+
+            // Enhance button responsiveness
+            enhanceButtonResponsiveness();
+
+            // Add instruction overlay for users
+            setTimeout(() => {
+                const instruction = document.createElement('div');
+                instruction.id = 'usage-instructions';
+                instruction.style.cssText = `
+                    position: fixed;
+                    top: 70px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 16px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    max-width: 320px;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    animation: slideIn 0.5s ease-out;
+                `;
+                instruction.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px;">🎯 Quick Guide:</div>
+                    <div style="margin-bottom: 4px;">• <strong>Double-click</strong> any field to edit text</div>
+                    <div style="margin-bottom: 4px;">• <strong>Drag</strong> fields to reposition them</div>
+                    <div style="margin-bottom: 4px;">• <strong>Resize</strong> using the blue handle (bottom-right)</div>
+                    <div style="margin-bottom: 4px;">• <strong>Select</strong> a field, then use arrow keys to nudge</div>
+                    <div style="margin-bottom: 4px;">• <strong>Delete</strong> key removes selected field</div>
+                    <div style="margin-bottom: 4px;">• <strong>Ctrl+Z/Y</strong> for undo/redo</div>
+                    <div style="margin-top: 10px; text-align: right;">
+                        <button onclick="this.parentElement.remove()" style="
+                            background: white;
+                            color: #667eea;
+                            border: none;
+                            padding: 6px 14px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: bold;
+                            font-size: 12px;
+                        ">Got it! ✓</button>
+                    </div>
+                `;
+                document.body.appendChild(instruction);
+
+                // Auto-remove after 15 seconds
+                setTimeout(() => {
+                    if (instruction.parentElement) {
+                        instruction.style.animation = 'slideOut 0.3s ease-in';
+                        setTimeout(() => instruction.remove(), 300);
+                    }
+                }, 15000);
+            }, 1000);
+        }
+        
+        // Run initialization
+        init();
+    </script>
+</body>
+</html>

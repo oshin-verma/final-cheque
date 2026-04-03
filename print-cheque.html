@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>ChequeShield – Print Your Cheque</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@0..1" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1e40af",
+            "primary-dark": "#1e3a8a",
+            "background-light": "#f0f4ff",
+            "background-dark": "#0f172a",
+            "danger": "#dc2626",
+            "success-green": "#22c55e",
+          },
+          fontFamily: { "display": ["Public Sans", "sans-serif"] }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    @media print {
+      body * { visibility: hidden; }
+      #chequePrintArea, #chequePrintArea * { visibility: visible; }
+      #chequePrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+
+<!-- Header -->
+<header class="bg-primary-dark text-white py-4 px-6 flex items-center justify-between sticky top-0 z-50 no-print">
+  <a href="single.html" class="bg-white/10 px-4 py-2 rounded text-sm font-semibold hover:bg-white/20 transition">← Back</a>
+  <h1 class="text-xl font-bold">ChequeShield</h1>
+  <div class="w-20"></div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-12">
+  
+  <!-- Cheque Form -->
+  <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl mb-8 no-print">
+    <h2 class="text-2xl font-bold text-primary-dark mb-6 flex items-center gap-2">
+      <span class="material-symbols-outlined">edit</span> Enter Cheque Details
+    </h2>
+
+    <!-- Bank Selection Buttons -->
+    <div class="mb-6">
+      <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3">Select Bank</label>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" class="bank-btn px-6 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:border-primary hover:bg-primary hover:text-white transition" data-bank="STATE">STATE BANK</button>
+        <button type="button" class="bank-btn px-6 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:border-primary hover:bg-primary hover:text-white transition" data-bank="HDFC">HDFC</button>
+        <button type="button" class="bank-btn px-6 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:border-primary hover:bg-primary hover:text-white transition" data-bank="ICICI">ICICI</button>
+        <button type="button" class="bank-btn px-6 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:border-primary hover:bg-primary hover:text-white transition" data-bank="AXIS">AXIS</button>
+        <button type="button" class="bank-btn px-6 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:border-primary hover:bg-primary hover:text-white transition" data-bank="PUNJAB">PUNJAB</button>
+      </div>
+    </div>
+
+    <form id="chequePrintForm" class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Bank</label>
+        <select id="bankSelect" class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary">
+          <option value="STATE">STATE BANK</option>
+          <option value="HDFC">HDFC</option>
+          <option value="ICICI">ICICI</option>
+          <option value="AXIS">AXIS</option>
+          <option value="PUNJAB">PUNJAB</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Date</label>
+        <input type="date" id="chequeDate" class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary"/>
+      </div>
+      
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Payee Name</label>
+        <input type="text" id="payeeName" placeholder="Enter payee name" class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Amount (₹)</label>
+        <input type="number" id="amount" placeholder="Enter amount" class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Signature</label>
+        <div class="flex gap-2">
+          <input type="file" id="signatureUpload" accept="image/*" class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
+          <label class="flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer">
+            <input type="checkbox" id="usePlaceholder" class="text-primary"/>
+            <span class="text-sm">Use Placeholder</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="md:col-span-2 flex gap-4">
+        <button type="button" onclick="printCheque()" class="flex-1 bg-success-green hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+          <span class="material-symbols-outlined">print</span> Print Cheque
+        </button>
+        <button type="button" onclick="window.location.href='single.html'" class="px-8 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white font-bold py-4 rounded-xl transition">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Real Cheque Preview -->
+  <div id="chequePrintArea" class="live-preview relative w-full h-[500px] bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-slate-200">
+    <!-- Real Cheque Background Image -->
+    <img id="cheque-background" src="sbi-real-cheque-bg.svg" alt="Cheque" class="absolute inset-0 w-full h-full object-cover"/>
+
+    <!-- Bank Name Display -->
+    <div class="absolute top-4 left-4 z-10">
+      <span class="preview-bank-name text-lg font-bold text-primary-dark bg-white/80 px-3 py-1.5 rounded">STATE BANK OF INDIA</span>
+    </div>
+
+    <!-- Overlay for text visibility -->
+    <div class="absolute inset-0 bg-white/20"></div>
+
+    <!-- Dynamic Fields -->
+    <div class="absolute inset-0 p-8">
+      <div class="absolute top-[12%] right-[12%] text-right">
+        <span id="previewDate" class="text-2xl font-bold text-slate-900 bg-white/70 px-4 py-2 rounded">DD/MM/YYYY</span>
+      </div>
+
+      <div class="absolute top-[28%] left-[12%] right-[25%]">
+        <span id="previewPayee" class="text-xl font-semibold text-slate-900 bg-white/70 px-4 py-2 rounded block">Payee Name</span>
+      </div>
+
+      <div class="absolute top-[28%] right-[12%] text-right">
+        <span id="previewAmount" class="text-2xl font-bold text-slate-900 bg-white/70 px-4 py-2 rounded">₹ 0.00</span>
+      </div>
+
+      <div class="absolute top-[42%] left-[12%] right-[12%]">
+        <span id="previewWords" class="text-lg font-medium text-slate-800 bg-white/70 px-4 py-3 rounded block italic">Zero Only</span>
+      </div>
+
+      <div class="absolute bottom-[12%] right-[12%]">
+        <div id="previewSignature" class="bg-white/70 px-6 py-3 rounded">
+          <svg class="stroke-primary fill-none" height="40" viewbox="0 0 120 40" width="120">
+            <path d="M10 25 Q 40 5 70 25 T 110 25" stroke-width="3"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <p class="text-center text-slate-500 mt-6 no-print">
+    <span class="material-symbols-outlined align-middle">info</span> 
+    Fill in the form above and click Print to print your cheque
+  </p>
+
+</main>
+
+<script>
+// Number to words (Indian system)
+function numberToWords(num) {
+  if (num === 0) return "Zero Only";
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+  const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  
+  let result = "";
+  const crore = Math.floor(num / 10000000);
+  num %= 10000000;
+  if (crore) result += ones[crore] + " Crore ";
+  
+  const lakh = Math.floor(num / 100000);
+  num %= 100000;
+  if (lakh) result += ones[lakh] + " Lakh ";
+  
+  const thousand = Math.floor(num / 1000);
+  num %= 1000;
+  if (thousand) {
+    if (thousand < 10) result += ones[thousand] + " Thousand ";
+    else if (thousand < 20) result += teens[thousand - 10] + " Thousand ";
+    else {
+      const t = Math.floor(thousand / 10);
+      const o = thousand % 10;
+      result += tens[t] + (o ? " " + ones[o] : "") + " Thousand ";
+    }
+  }
+  
+  const hundred = Math.floor(num / 100);
+  num %= 100;
+  if (hundred) result += ones[hundred] + " Hundred ";
+  
+  if (num) {
+    if (num < 10) result += ones[num];
+    else if (num < 20) result += teens[num - 10];
+    else {
+      const t = Math.floor(num / 10);
+      const o = num % 10;
+      result += tens[t] + (o ? " " + ones[o] : "");
+    }
+  }
+  
+  return result.trim() + " Only";
+}
+
+function formatAmount(num) {
+  const parts = num.toString().split(".");
+  let lastThree = parts[0].slice(-3);
+  let otherNumbers = parts[0].slice(0, -3);
+  if (otherNumbers !== "") lastThree = "," + lastThree;
+  const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+  return "₹ " + formatted + (parts[1] ? "." + parts[1] : ".00");
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
+}
+
+function updatePreview() {
+  const date = document.getElementById('chequeDate').value;
+  const payee = document.getElementById('payeeName').value;
+  const amount = document.getElementById('amount').value;
+  
+  document.getElementById('previewDate').textContent = date ? formatDate(date) : "DD/MM/YYYY";
+  document.getElementById('previewPayee').textContent = payee || "Payee Name";
+  
+  if (amount) {
+    const numAmount = parseFloat(amount);
+    document.getElementById('previewAmount').textContent = formatAmount(numAmount);
+    document.getElementById('previewWords').textContent = numberToWords(numAmount);
+  } else {
+    document.getElementById('previewAmount').textContent = "₹ 0.00";
+    document.getElementById('previewWords').textContent = "Zero Only";
+  }
+}
+
+let signatureImage = null;
+document.getElementById('signatureUpload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      signatureImage = event.target.result;
+      document.getElementById('previewSignature').innerHTML = 
+        `<img src="${signatureImage}" style="height: 40px; max-width: 150px;"/>`;
+      document.getElementById('usePlaceholder').checked = false;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById('usePlaceholder').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    document.getElementById('previewSignature').innerHTML = 
+      `<div style="border: 2px dashed #1e40af; padding: 8px 20px; color: #1e40af; font-weight: bold; font-size: 14px;">Sign Here</div>`;
+    signatureImage = null;
+  } else {
+    document.getElementById('previewSignature').innerHTML = 
+      `<svg class="stroke-primary fill-none" height="40" viewbox="0 0 120 40" width="120"><path d="M10 25 Q 40 5 70 25 T 110 25" stroke-width="3"></path></svg>`;
+  }
+});
+
+['chequeDate', 'payeeName', 'amount'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+// Bank Selector Functionality
+const bankButtons = document.querySelectorAll('.bank-btn');
+const preview = document.querySelector('.live-preview');
+const chequeBg = document.getElementById('cheque-background');
+
+const bankTemplates = {
+  STATE: 'sbi-real-cheque-bg.svg',
+  HDFC: 'hdfc-real-cheque-bg.svg',
+  ICICI: 'icici-real-cheque-bg.svg',
+  AXIS: 'axis-real-cheque-bg.svg',
+  PUNJAB: 'pnb-real-cheque-bg.svg'
+};
+
+const bankNames = {
+  STATE: 'STATE BANK OF INDIA',
+  HDFC: 'HDFC BANK',
+  ICICI: 'ICICI BANK',
+  AXIS: 'AXIS BANK',
+  PUNJAB: 'PUNJAB NATIONAL BANK'
+};
+
+// Set STATE as default active
+document.querySelector('.bank-btn[data-bank="STATE"]')?.classList.add('active', 'border-primary', 'bg-primary', 'text-white');
+
+bankButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const bank = btn.dataset.bank;
+    
+    // Remove active class from all, add to clicked
+    bankButtons.forEach(b => {
+      b.classList.remove('active', 'border-primary', 'bg-primary', 'text-white');
+      b.classList.add('border-slate-300', 'dark:border-slate-600');
+    });
+    btn.classList.add('active', 'border-primary', 'bg-primary', 'text-white');
+    btn.classList.remove('border-slate-300', 'dark:border-slate-600');
+
+    // Update background (real cheque image)
+    if (chequeBg && bankTemplates[bank]) {
+      chequeBg.src = bankTemplates[bank];
+    }
+
+    // Update bank name text in preview
+    const bankNameEl = document.querySelector('.preview-bank-name');
+    if (bankNameEl && bankNames[bank]) {
+      bankNameEl.textContent = bankNames[bank];
+    }
+
+    // Sync with dropdown
+    document.getElementById('bankSelect').value = bank;
+  });
+});
+
+// Sync dropdown with buttons
+document.getElementById('bankSelect').addEventListener('change', function() {
+  const selectedBank = this.value;
+  bankButtons.forEach(btn => {
+    btn.classList.remove('active', 'border-primary', 'bg-primary', 'text-white');
+    btn.classList.add('border-slate-300', 'dark:border-slate-600');
+    if (btn.dataset.bank === selectedBank) {
+      btn.classList.add('active', 'border-primary', 'bg-primary', 'text-white');
+      btn.classList.remove('border-slate-300', 'dark:border-slate-600');
+    }
+  });
+  
+  // Update background
+  if (chequeBg && bankTemplates[selectedBank]) {
+    chequeBg.src = bankTemplates[selectedBank];
+  }
+  
+  // Update bank name
+  const bankNameEl = document.querySelector('.preview-bank-name');
+  if (bankNameEl && bankNames[selectedBank]) {
+    bankNameEl.textContent = bankNames[selectedBank];
+  }
+});
+
+document.getElementById('chequeDate').valueAsDate = new Date();
+updatePreview();
+
+function printCheque() {
+  const payee = document.getElementById('payeeName').value.trim();
+  const amount = document.getElementById('amount').value;
+  
+  if (!payee || !amount || Number(amount) <= 0) {
+    alert("Please enter valid Payee Name and Amount");
+    return;
+  }
+  
+  window.print();
+}
+</script>
+
+</body>
+</html>

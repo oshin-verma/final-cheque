@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>ChequeShield – Single Cheque Printing | Zero Dishonour</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@0..1" rel="stylesheet"/>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1e40af",
+            "primary-dark": "#1e3a8a",
+            "background-light": "#f0f4ff",
+            "background-dark": "#0f172a",
+            "danger": "#dc2626",
+            "warning": "#f59e0b",
+            "success-green": "#22c55e",
+          },
+          fontFamily: { "display": ["Public Sans", "sans-serif"] },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .step-card:hover { transform: translateY(-8px); transition: transform 0.3s ease; }
+    .hero-gradient { background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%); }
+    .bank-card:hover { transform: scale(1.05); }
+    .cheque-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.1); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    html { scroll-behavior: smooth; }
+    body { min-height: 100vh; overflow-x: hidden; }
+    .intro-gradient-bg {
+      background: linear-gradient(180deg, rgba(240,244,255,1) 0%, rgba(255,255,255,1) 100%);
+    }
+    .dark .intro-gradient-bg {
+      background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(30,41,59,1) 100%);
+    }
+    @media print {
+      body * { visibility: hidden; }
+      #chequePreview, #chequePreview * { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+      @page { size: auto; margin: 10mm; }
+    }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+
+  <!-- Header -->
+  <header class="bg-primary-dark text-white py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50 no-print">
+    <div class="flex items-center gap-4">
+      <a href="index.html" class="bg-white/10 px-3 py-1 rounded text-sm font-semibold border border-white/20 hover:bg-white/20 transition">Zero Cheque Dishonour</a>
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-xl md:text-2xl font-bold tracking-tight">ChequeShield</h1>
+    </div>
+    <div class="flex items-center gap-4">
+      <button class="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition">
+        <span class="text-xs uppercase">az</span><span class="font-medium">हिन्दी</span>
+      </button>
+      <button class="bg-danger hover:bg-red-700 px-4 md:px-6 py-2 rounded-full font-semibold flex items-center gap-2 transition shadow-lg">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <span class="hidden xs:inline">Login</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 no-print">
+
+    <!-- Urgent Action Hero -->
+    <section class="relative w-full py-12 md:py-24 px-6 md:px-20 overflow-hidden">
+      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div class="flex flex-col gap-6 text-center lg:text-left z-10">
+          <div class="inline-flex items-center gap-2 bg-danger/10 text-danger px-4 py-2 rounded-full w-fit mx-auto lg:mx-0 font-bold text-sm border border-danger/20">
+            <span class="material-symbols-outlined text-lg">error</span>
+            URGENT ACTION REQUIRED
+          </div>
+          <h1 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-slate-900 dark:text-white">
+            A Dishonoured Cheque <br/>
+            <span class="text-primary">Can Send You to Jail.</span>
+          </h1>
+          <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium max-w-xl">
+            Wrong date, misalignment, or payee name = Section 138 legal notice
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
+            <a href="print-cheque.html" class="bg-danger text-white h-16 px-8 rounded-2xl font-black text-xl flex items-center justify-center gap-3 shadow-xl shadow-danger/30 hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-2xl">security</span>
+              FIX MY CHEQUE NOW
+            </a>
+            <button class="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 h-16 px-8 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+              <span class="material-symbols-outlined">call</span>
+              CALL EXPERT
+            </button>
+          </div>
+        </div>
+        <div class="relative group">
+          <div class="absolute inset-0 bg-primary/20 blur-[120px] rounded-full"></div>
+          <div class="relative rounded-3xl border-4 border-white dark:border-slate-700 shadow-2xl overflow-hidden aspect-[4/3] bg-slate-200">
+            <img alt="Bounced Cheque Visual" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
+                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe5e-IkjbO_l8XFjoK4RXasiibs2Eze5OJcVzd9VkAwm7Ye1ctFNmnV7tFfoH2vryIVhMaCSiVSw_jE_RNs01JOA5QVcrFiu2FPrx_MG4qmljUZbKtBayaFbsxhwNctArHfdwli4ttrNZS1e6FM8tZVYb_gRN2OFftQ1H76Ar_rtUSipcsBL6i0KSLSxvGMVBuZBzKcBjdOm8akyF6yLnvdDUy061L3KFg0ERpC5Vv8ZAtPbsQ-gCMcs1GKZ3D85800Rc__1lLuwiT"/>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div class="bg-danger/90 text-white text-6xl md:text-8xl font-black px-10 py-5 rounded-xl rotate-[-15deg] border-8 border-white shadow-2xl tracking-widest uppercase">
+                BOUNCED
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline -->
+    <section class="py-20 bg-slate-100 dark:bg-slate-900/50 px-6 md:px-20">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-4">WHAT HAPPENS NEXT?</h2>
+          <div class="h-2 w-24 bg-primary mx-auto rounded-full"></div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="step-card flex flex-col bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-xl border border-slate-200 dark:border-slate-700 relative">
+            <div class="absolute -top-6 -left-6 w-16 h-16 bg-danger text-white rounded-full flex items-center justify-center text-3xl font-black shadow-lg border-4 border-white dark:border-slate-800">1</div>
+            <div class="w-full h-32 mb-4 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+              <img alt="Bank rejects cheque" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARUo1Dtdfdg9I-6hxWjsomTMtXF8pu3lJ_qbfjgi-GYwdDTcIZDvcTYflPThAgGhX90Ca_vnJ9CPdKGIOnrOt8_k6MWSkrYV857Yi9vzFm9EUMO2czsFL7LfOD7PRhbaA-dJ3qAPmQ_SbJQtzD1XHOU2X5QfGCphghplIUfx70popMl1lowj4X8u3aO60odyfqsP1VN7SKRIdw3SXUcX3xou9SpgIfYFD8fdUN2A8BQL4Pg7ec8PUzmK0aw5DFwIJnfUocgis_dh0"/>
+            </div>
+            <h3 class="text-2xl font-black text-danger mb-2">BANK REJECTS</h3>
+            <p class="text-lg font-medium text-slate-600 dark:text-slate-400">Cheque returned. Bank reports insufficient funds.</p>
+          </div>
+          <div class="step-card flex flex-col bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-xl border border-slate-200 dark:border-slate-700 relative">
+            <div class="absolute -top-6 -left-6 w-16 h-16 bg-danger text-white rounded-full flex items-center justify-center text-3xl font-black shadow-lg border-4 border-white dark:border-slate-800">2</div>
+            <div class="w-full h-32 mb-4 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+              <img alt="Legal notice" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAs97sx8gS2kpS_baYEn5vnjxhHyXmLSbcxmMz_uqM7NKo4yXyCQkn4yyfTYMX-vWEKLy3OZXD1OXcare6wXKptlhrpthl07Ds4TScVXAFFM5S22rWFYuHsHrYBw8ypMcoH8rgN8ghzETApoAC0d6OYPXmmARaClPLATNwQ-CQW1yqZQ8_V-Lw9U9AnuU4ztgjWju3Y-JQj6I_M-ZzYITTE-xtZzIWDsbLDL-6sBZECVg6L8Tn_65JSUoZyxZDek_necXMg9U5FT7E"/>
+            </div>
+            <h3 class="text-2xl font-black text-danger mb-2">LEGAL NOTICE</h3>
+            <p class="text-lg font-medium text-slate-600 dark:text-slate-400">Formal warning letter. Last chance to pay.</p>
+          </div>
+          <div class="step-card flex flex-col bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-xl border border-slate-200 dark:border-slate-700 relative">
+            <div class="absolute -top-6 -left-6 w-16 h-16 bg-danger text-white rounded-full flex items-center justify-center text-3xl font-black shadow-lg border-4 border-white dark:border-slate-800">3</div>
+            <div class="w-full h-32 mb-4 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+              <img alt="Police action" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFuZ2kdNrR3JNJ6Zv-k5qoyrhmQg-Uv-3EQ9iPmXKTArz66BYJcKr9OHjt60ny2_bV1MWtymRaI6bKSeKxtLiFSJTc_z3Lg1TDjZLCGw1VWSlbaY49QmyRDdVW__3mg7neRzhS3nWrQpF6GdN9k-yL6XhOqoVb_lhm-vnRETjub0YwYbmNuqKrXzXik4dii5X8j_UbyMJTVDWHD53y-XAeHzF7_6xgzfIPJ52IwhpeNPRIeSemKQYANMpW11_W996MkSsnVcI7mDM"/>
+            </div>
+            <h3 class="text-2xl font-black text-danger mb-2">POLICE / JAIL</h3>
+            <p class="text-lg font-medium text-slate-600 dark:text-slate-400">Police action. Possible arrest and jail time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Intro -->
+    <section class="py-20 px-6 md:px-20 intro-gradient-bg border-y border-slate-100 dark:border-slate-800">
+      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div class="text-center lg:text-left">
+          <h2 class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4">Single Cheque Printing</h2>
+          <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium">India's Fastest, Easiest, Web-Based Cheque Printing Tool.</p>
+          <p class="text-lg text-slate-500 dark:text-slate-500 mt-4">Used by CAs, NBFCs & SMBs to stay 138-compliant. No downloads.</p>
+        </div>
+        <div class="hidden lg:block relative">
+          <!-- laptop mockup placeholder -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Cheque Form Section -->
+    <section class="py-16 md:py-24 px-6 md:px-20 bg-[#f0f4ff] dark:bg-slate-900/80 overflow-hidden">
+      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div class="flex flex-col gap-6 lg:gap-8">
+          <h2 class="text-6xl md:text-[80px] font-black leading-[0.95] tracking-tight text-[#1e3a8a] dark:text-white">
+            Print Cheques.<br/>Zero Mistakes.
+          </h2>
+          <p class="text-2xl md:text-3xl text-slate-500 dark:text-slate-400 font-medium">
+            Automatic • Accurate • 100% Compliant
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <a href="#cheque-preview-section" class="bg-[#22c55e] text-white h-16 px-8 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 hover:scale-[1.02] transition-transform">
+              <span class="material-symbols-outlined text-2xl">print</span>
+              Start Printing Now
+            </a>
+            <button class="bg-white dark:bg-slate-800 text-[#1e3a8a] dark:text-white h-16 px-8 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg shadow-slate-200/50 dark:shadow-none hover:bg-slate-50 transition-colors">
+              <span class="material-symbols-outlined text-2xl">play_circle</span>
+              Watch Demo
+            </button>
+          </div>
+        </div>
+
+        <!-- Cheque Form -->
+        <div id="cheque-form" class="bg-white dark:bg-slate-800 rounded-[30px] p-8 w-full border border-slate-200 dark:border-slate-700 cheque-shadow">
+          <h3 class="text-2xl font-bold text-[#1e3a8a] dark:text-white mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined">print</span> Single Cheque Printing
+          </h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">lan</span> LAN Supported – Works on any Windows PC in network
+          </p>
+
+          <form id="chequePrintForm" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Bank</label>
+                <select id="bankSelect" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#1e40af]">
+                  <option value="SBI">SBI</option>
+                  <option value="ICICI">ICICI</option>
+                  <option value="AXIS">AXIS</option>
+                  <option value="PNB">PNB</option>
+                  <option value="KOTAK">KOTAK</option>
+                  <option value="BOB">BOB</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Date</label>
+                <input type="date" id="chequeDate" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#1e40af]"/>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Payee Name</label>
+              <input type="text" id="payeeName" placeholder="e.g. Mr. Rajesh Kumar" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#1e40af]"/>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Amount (₹)</label>
+              <input type="number" id="amount" placeholder="e.g. 125000" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#1e40af]"/>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Signature</label>
+              <div class="flex gap-2">
+                <input type="file" id="signatureUpload" accept="image/*" class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"/>
+                <label class="flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                  <input type="checkbox" id="usePlaceholder" class="text-[#1e40af]"/>
+                  <span class="text-sm text-slate-600 dark:text-slate-400">Use Placeholder</span>
+                </label>
+              </div>
+            </div>
+
+            <button type="button" onclick="printCheque()" class="w-full bg-[#22c55e] hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+              <span class="material-symbols-outlined">print</span> Print Cheque
+            </button>
+
+            <p class="text-xs text-center text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-xs">verified</span> Tested on Canon / HP Printers + Windows – Ready to print
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supported Banks -->
+    <section class="py-16 px-6 bg-white dark:bg-slate-900 no-print">
+      <div class="container mx-auto">
+        <div class="text-center mb-12">
+          <h3 class="text-xl font-bold text-slate-400 uppercase tracking-widest">Supported Banks</h3>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">SBI</span>
+          </div>
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">ICICI</span>
+          </div>
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">AXIS</span>
+          </div>
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">PNB</span>
+          </div>
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">KOTAK</span>
+          </div>
+          <div class="bank-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-2xl p-8 flex items-center justify-center transition cursor-pointer group">
+            <span class="text-2xl font-black text-primary group-hover:scale-110 transition">BOB</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-primary-dark text-white pt-20 pb-8 px-6 md:px-24 no-print">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-12">
+      <div>
+        <h4 class="text-lg font-bold mb-4">ChequeShield</h4>
+        <p class="text-sm text-gray-400">India's most trusted cheque printing solution for businesses.</p>
+      </div>
+      <div>
+        <h4 class="text-lg font-bold mb-4">Quick Links</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="index.html" class="hover:text-white transition">Home</a></li>
+          <li><a href="#cheque-form" class="hover:text-white transition">Print Cheque</a></li>
+          <li><a href="entry.html" class="hover:text-white transition">Entry Mode</a></li>
+          <li><a href="design.html" class="hover:text-white transition">Design Mode</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-lg font-bold mb-4">Legal</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+          <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
+          <li><a href="#" class="hover:text-white transition">Refund Policy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-lg font-bold mb-4">Contact</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li>support@chequeshield.com</li>
+          <li>+91-XXX-XXX-XXXX</li>
+          <li>New Delhi, India</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10 pt-8 text-center text-sm text-gray-400">
+      <p class="mb-2">© 2026 ChequeShield – Single Cheque Printing. All Rights Reserved.</p>
+      <p>Powered by <span class="text-blue-300">Signimus Technologies Private Limited</span></p>
+    </div>
+  </footer>
+
+</div>
+
+<!-- JavaScript -->
+<script>
+// Number to words (Indian system)
+function numberToWords(num) {
+  if (num === 0) return "Zero Only";
+
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+  const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+  let result = "";
+
+  const crore = Math.floor(num / 10000000);
+  num %= 10000000;
+  if (crore) result += ones[crore] + " Crore ";
+
+  const lakh = Math.floor(num / 100000);
+  num %= 100000;
+  if (lakh) result += ones[lakh] + " Lakh ";
+
+  const thousand = Math.floor(num / 1000);
+  num %= 1000;
+  if (thousand) {
+    if (thousand < 10) result += ones[thousand] + " Thousand ";
+    else if (thousand < 20) result += teens[thousand - 10] + " Thousand ";
+    else {
+      const t = Math.floor(thousand / 10);
+      const o = thousand % 10;
+      result += tens[t] + (o ? " " + ones[o] : "") + " Thousand ";
+    }
+  }
+
+  const hundred = Math.floor(num / 100);
+  num %= 100;
+  if (hundred) result += ones[hundred] + " Hundred ";
+
+  if (num) {
+    if (num < 10) result += ones[num];
+    else if (num < 20) result += teens[num - 10];
+    else {
+      const t = Math.floor(num / 10);
+      const o = num % 10;
+      result += tens[t] + (o ? " " + ones[o] : "");
+    }
+  }
+
+  return result.trim() + " Only";
+}
+
+// Format amount ₹ 1,23,45,678.00
+function formatAmount(num) {
+  const parts = num.toString().split(".");
+  let lastThree = parts[0].slice(-3);
+  let otherNumbers = parts[0].slice(0, -3);
+  if (otherNumbers !== "") lastThree = "," + lastThree;
+  const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+  return "₹ " + formatted + (parts[1] ? "." + parts[1] : ".00");
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
+}
+
+// Update preview in real-time
+function updatePreview() {
+  const date = document.getElementById('chequeDate').value;
+  const payee = document.getElementById('payeeName').value;
+  const amount = document.getElementById('amount').value;
+
+  const previewDateEl = document.getElementById('previewDate');
+  const previewPayeeEl = document.getElementById('previewPayee');
+  const previewAmountEl = document.getElementById('previewAmount');
+  const previewWordsEl = document.getElementById('previewWords');
+
+  if(previewDateEl) previewDateEl.textContent = date ? formatDate(date) : "DD/MM/YYYY";
+  if(previewPayeeEl) previewPayeeEl.textContent = payee || "Payee Name";
+
+  if (amount) {
+    const numAmount = parseFloat(amount);
+    if(previewAmountEl) previewAmountEl.textContent = formatAmount(numAmount);
+    if(previewWordsEl) previewWordsEl.textContent = numberToWords(numAmount);
+  } else {
+    if(previewAmountEl) previewAmountEl.textContent = "₹ 0.00";
+    if(previewWordsEl) previewWordsEl.textContent = "Zero Only";
+  }
+  console.log('Preview updated:', {date, payee, amount});
+}
+
+// Signature handling
+let signatureImage = null;
+document.getElementById('signatureUpload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      signatureImage = ev.target.result;
+      document.getElementById('previewSignature').innerHTML =
+        `<img src="${signatureImage}" alt="Signature" style="height: 30px; max-width: 120px; object-fit: contain;">`;
+      document.getElementById('usePlaceholder').checked = false;
+      updatePreview();
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById('usePlaceholder').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    document.getElementById('previewSignature').innerHTML =
+      `<div style="border: 2px dashed #1e3a8a; padding: 8px 20px; display: inline-block; color: #1e3a8a; font-weight: bold; font-size: 12px;">Sign Here</div>`;
+    signatureImage = null;
+  } else {
+    document.getElementById('previewSignature').innerHTML =
+      `<svg class="stroke-[#1e3a8a] fill-none" height="30" viewbox="0 0 100 30" width="100"><path d="M10 20 Q 30 5 50 20 T 90 20" stroke-width="2"></path></svg>`;
+  }
+});
+
+// Add event listeners for real-time preview
+['chequeDate', 'payeeName', 'amount'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+// Default today
+document.getElementById('chequeDate').valueAsDate = new Date();
+updatePreview();
+
+// Print function
+function printCheque() {
+  const payee = document.getElementById('payeeName').value.trim();
+  const amount = document.getElementById('amount').value;
+
+  if (!payee || !amount || Number(amount) <= 0) {
+    alert("Please enter valid Payee Name and Amount");
+    return;
+  }
+
+  // For real printing you would normally generate PDF or use browser print
+  // For now we just trigger browser print dialog
+  window.print();
+}
+</script>
+
+</body>
+</html>

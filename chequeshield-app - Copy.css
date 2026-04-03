@@ -1,0 +1,396 @@
+/**
+ * ChequeShield PWA - Additional Styles
+ * Offline-First Cheque Printing Application
+ */
+
+/* Mobile-only utility class */
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block !important;
+    }
+    
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+    
+    .desktop-only {
+        display: block !important;
+    }
+}
+
+/* High contrast mode improvements */
+@media (prefers-contrast: high) {
+    .cockpit-input,
+    .bank-selector,
+    .toolbar-btn,
+    .ac-payee-toggle {
+        border-width: 4px;
+    }
+    
+    .cockpit-panel {
+        border-right-width: 4px;
+    }
+    
+    button,
+    .icon-action-btn {
+        border-width: 3px;
+    }
+}
+
+/* Focus visible for better accessibility */
+.cockpit-input:focus-visible,
+.bank-selector:focus-visible,
+button:focus-visible,
+.toolbar-btn:focus-visible,
+.icon-action-btn:focus-visible {
+    outline: 4px solid #3b82f6;
+    outline-offset: 3px;
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Print optimization */
+@media print {
+    .cockpit-panel,
+    .cockpit-toolbar,
+    #status-bar,
+    .toast-container,
+    .snap-indicator {
+        display: none !important;
+    }
+    
+    .workspace-panel {
+        width: 100%;
+        height: 100%;
+    }
+    
+    #workspace {
+        padding: 0;
+        background: white;
+    }
+    
+    #cheque-container {
+        transform: none !important;
+    }
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .cockpit-input,
+    .bank-selector,
+    button,
+    .toolbar-btn,
+    .icon-action-btn,
+    .ac-payee-toggle,
+    .autocomplete-item {
+        min-height: 48px;
+    }
+    
+    .autocomplete-item {
+        min-height: 56px;
+    }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+    /* Can be extended for dark theme */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #3b82f6;
+    color: white;
+    padding: 8px 16px;
+    z-index: 10000;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Field drag preview */
+.field-item.dragging {
+    opacity: 0.8;
+    cursor: grabbing;
+}
+
+/* MICR zone warning pulse */
+@keyframes micrPulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.micr-clear-band {
+    animation: micrPulse 3s ease-in-out infinite;
+}
+
+/* Button press effect */
+.icon-action-btn:active,
+.toolbar-btn:active,
+.print-btn:active {
+    transform: scale(0.95);
+}
+
+/* Form validation states */
+.cockpit-input:invalid:not(:placeholder-shown) {
+    border-color: #ef4444;
+}
+
+.cockpit-input:valid:not(:placeholder-shown) {
+    border-color: #22c55e;
+}
+
+/* Dropdown animation */
+.autocomplete-dropdown {
+    animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Status badge animations */
+#date-status-badge {
+    transition: all 0.3s ease;
+}
+
+/* Panel collapse animation for mobile */
+@media (max-width: 768px) {
+    .cockpit-panel-content {
+        transition: max-height 0.3s ease-out, opacity 0.3s ease;
+    }
+    
+    .cockpit-panel.collapsed .cockpit-panel-content {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+    }
+}
+
+/* Icon rotation for toggle */
+#panel-toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Custom scrollbar for cockpit panel */
+.cockpit-panel-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.cockpit-panel-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.cockpit-panel-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.cockpit-panel-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Amount words display animation */
+#amount-words {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Toast enter/exit animations */
+.toast {
+    animation: toastEnter 0.35s ease-out;
+}
+
+@keyframes toastEnter {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* PDC badge glow effect */
+.pdc-badge {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+/* A/C Payee active state glow */
+.ac-payee-toggle.active {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+/* Field selected state */
+.field-item.selected {
+    animation: selectedPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes selectedPulse {
+    0%, 100% {
+        outline-color: #3b82f6;
+    }
+    50% {
+        outline-color: #60a5fa;
+    }
+}
+
+/* Resize handle hover effect */
+.resize-handle:hover {
+    transform: scale(1.3);
+}
+
+/* Modal backdrop blur */
+.modal-overlay.active,
+.calibration-modal.active {
+    backdrop-filter: blur(4px);
+}
+
+/* Credit card reference for calibration */
+.credit-card-ref {
+    transition: width 0.2s, height 0.2s;
+}
+
+/* Zoom display update animation */
+#zoom-display {
+    transition: all 0.2s ease;
+}
+
+/* Network status dot pulse when offline */
+.network-status-indicator.offline .network-dot {
+    animation: offlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes offlinePulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Action buttons row responsive */
+.action-buttons-row {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 400px) {
+    .action-buttons-row {
+        gap: 8px;
+    }
+    
+    .icon-action-btn {
+        width: 52px;
+        height: 52px;
+        flex: 1;
+        min-width: 52px;
+    }
+    
+    .icon-action-btn svg {
+        width: 26px;
+        height: 26px;
+    }
+}
+
+/* Toolbar responsive wrapping */
+.cockpit-toolbar {
+    row-gap: 8px;
+}
+
+/* Ensure minimum touch target sizes */
+@media (pointer: coarse) {
+    * {
+        min-height: 44px;
+    }
+    
+    button,
+    input,
+    select,
+    [role="button"],
+    [tabindex] {
+        min-height: 48px;
+        min-width: 48px;
+    }
+}

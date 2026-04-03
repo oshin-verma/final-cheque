@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChequeShield - HDFC Cockpit Precision Cheque Printing</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --sidebar-bg: #1a1a2e;
+            --sidebar-hover: #16213e;
+            --header-bg: #0f0f1a;
+            --toolbar-bg: #252540;
+            --accent-color: #e94560;
+            --accent-hover: #ff6b6b;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #3a3a5a;
+            --success-color: #00c853;
+            --warning-color: #ffc107;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a12;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--accent-color), #c73e54);
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 15px 0;
+        }
+
+        .sidebar-menu li {
+            margin: 2px 10px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: var(--sidebar-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-menu a.active {
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .sidebar-menu .icon {
+            width: 24px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .sidebar-section {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 10px;
+        }
+
+        .sidebar-section h4 {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: var(--header-bg);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .top-header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-color), #ff8a8a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-btn.primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .header-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .header-btn.secondary {
+            background: var(--toolbar-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-btn.secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: var(--toolbar-bg);
+            padding: 12px 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-right: 15px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .toolbar label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .toolbar select,
+        .toolbar input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--sidebar-bg);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            min-width: 150px;
+        }
+
+        .toolbar select:focus,
+        .toolbar input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .toolbar-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .toolbar-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .toolbar-btn.secondary:hover {
+            background: var(--border-color);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-slider {
+            width: 44px;
+            height: 22px;
+            background: var(--border-color);
+            border-radius: 11px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-color);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Workspace */
+        .workspace {
+            flex: 1;
+            padding: 25px;
+            background: #12121a;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .cheque-container {
+            position: relative;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .cheque-bg {
+            width: 900px;
+            height: 350px;
+            position: relative;
+            background: linear-gradient(180deg, #fff5f5 0%, #ffffff 15%, #ffffff 85%, #fff0f0 100%);
+        }
+
+        /* HDFC Cheque Design */
+        .cheque-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(90deg, #e31e24 0%, #c41218 50%, #a30f14 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .cheque-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cheque-logo-icon {
+            width: 35px;
+            height: 35px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #e31e24;
+            font-size: 1.2rem;
+        }
+
+        .cheque-logo-text {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .cheque-tagline {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.7rem;
+            margin-left: 15px;
+            font-style: italic;
+        }
+
+        .cheque-title {
+            position: absolute;
+            top: 55px;
+            right: 30px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 3px;
+        }
+
+        .cheque-number {
+            position: absolute;
+            top: 55px;
+            left: 30px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .cheque-number span {
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 2px;
+        }
+
+        .bank-details {
+            position: absolute;
+            top: 90px;
+            left: 30px;
+            font-size: 0.75rem;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .bank-details strong {
+            color: #333;
+        }
+
+        .pay-label {
+            position: absolute;
+            top: 130px;
+            left: 30px;
+            font-size: 0.85rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rupees-label {
+            position: absolute;
+            top: 170px;
+            left: 30px;
+            font-size: 0.85rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .amount-box {
+            position: absolute;
+            top: 125px;
+            right: 40px;
+            width: 140px;
+            height: 45px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .amount-box::before {
+            content: '₹';
+            margin-right: 5px;
+        }
+
+        .signature-line {
+            position: absolute;
+            bottom: 80px;
+            right: 40px;
+            width: 200px;
+        }
+
+        .signature-line-text {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+
+        .signature-border {
+            height: 1px;
+            background: #333;
+        }
+
+        /* MICR Line */
+        .micr-line {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #e31e24;
+            background: linear-gradient(90deg, transparent, rgba(227, 30, 36, 0.1), transparent);
+        }
+
+        .micr-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .micr-symbol {
+            font-size: 1.2rem;
+        }
+
+        /* Draggable Fields */
+        .draggable-field {
+            position: absolute;
+            min-width: 100px;
+            min-height: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px dashed #999;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: move;
+            font-size: 0.9rem;
+            color: #333;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .draggable-field:hover {
+            border-color: #666;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .draggable-field.selected {
+            border: 2px solid #e31e24;
+            background: rgba(255, 240, 240, 0.95);
+            z-index: 10;
+        }
+
+        .draggable-field.editing {
+            border: 2px solid #0066cc;
+            background: white;
+            cursor: text;
+        }
+
+        .draggable-field .field-label {
+            font-size: 0.65rem;
+            color: #888;
+            position: absolute;
+            top: -15px;
+            left: 0;
+            white-space: nowrap;
+        }
+
+        .draggable-field.selected .field-label {
+            color: #e31e24;
+            font-weight: 600;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            background: #e31e24;
+            cursor: nwse-resize;
+            border-radius: 2px;
+            display: none;
+        }
+
+        .draggable-field.selected .resize-handle {
+            display: block;
+        }
+
+        /* A/C Payee Stamp */
+        .stamp-field {
+            background: rgba(227, 30, 36, 0.15) !important;
+            border: 2px solid #e31e24 !important;
+            color: #e31e24 !important;
+            font-weight: 700;
+            transform: rotate(-15deg);
+        }
+
+        .stamp-field.selected {
+            border: 3px solid #0066cc !important;
+        }
+
+        /* Field Buttons Panel */
+        .field-buttons {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 50;
+        }
+
+        .field-btn {
+            padding: 10px 15px;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .field-btn:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .field-btn .icon {
+            margin-right: 8px;
+        }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            background: var(--header-bg);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .mode-btn:hover:not(.active) {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        .bottom-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .bottom-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bottom-btn.primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .bottom-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .bottom-btn.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .bottom-btn.success:hover {
+            background: #00a844;
+        }
+
+        .bottom-btn.warning {
+            background: var(--warning-color);
+            color: #333;
+        }
+
+        .bottom-btn.warning:hover {
+            background: #e0a800;
+        }
+
+        /* Grid Overlay */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 255, 0.1) 1px, transparent 1px);
+            background-size: 10px 10px;
+            pointer-events: none;
+            display: none;
+        }
+
+        .grid-overlay.active {
+            display: block;
+        }
+
+        /* Properties Panel */
+        .properties-panel {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 220px;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 200;
+            display: none;
+        }
+
+        .properties-panel.active {
+            display: block;
+        }
+
+        .properties-panel h4 {
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .property-group {
+            margin-bottom: 12px;
+        }
+
+        .property-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .property-group input,
+        .property-group select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--sidebar-bg);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-form label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .modal-form input,
+        .modal-form select,
+        .modal-form textarea {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--sidebar-bg);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .modal-form textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 220px;
+            }
+            .main-content {
+                margin-left: 220px;
+            }
+            .cheque-bg {
+                width: 750px;
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            padding: 10px;
+            background: var(--toolbar-bg);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar,
+            .top-header,
+            .toolbar,
+            .field-buttons,
+            .bottom-bar,
+            .properties-panel {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .workspace {
+                padding: 0;
+                background: white;
+            }
+            .cheque-container {
+                box-shadow: none;
+            }
+            .draggable-field {
+                border: none !important;
+                background: transparent !important;
+            }
+            .draggable-field .resize-handle,
+            .draggable-field .field-label {
+                display: none !important;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--sidebar-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>🏦 ChequeShield</h2>
+                <p>Precision Cheque Printing</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active"><span class="icon">⚡</span>Quick Cheque</a></li>
+                <li><a href="#"><span class="icon">📋</span>Bulk Builder</a></li>
+                <li><a href="#"><span class="icon">📖</span>Cheque Register</a></li>
+                <li><a href="#"><span class="icon">🏢</span>Vendor Master</a></li>
+                <li><a href="#"><span class="icon">📊</span>Reports</a></li>
+                <li><a href="#"><span class="icon">⚙️</span>Settings</a></li>
+            </ul>
+            <div class="sidebar-section">
+                <h4>Templates</h4>
+                <ul class="sidebar-menu">
+                    <li><a href="#" onclick="loadTemplate('hdfc-default')"><span class="icon">📄</span>HDFC Default</a></li>
+                    <li><a href="#" onclick="loadTemplate('hdfc-compact')"><span class="icon">📄</span>HDFC Compact</a></li>
+                    <li><a href="#" onclick="loadTemplate('hdfc-wide')"><span class="icon">📄</span>HDFC Wide</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h4>Actions</h4>
+                <ul class="sidebar-menu">
+                    <li><a href="#" onclick="saveTemplate()"><span class="icon">💾</span>Save Template</a></li>
+                    <li><a href="#" onclick="resetFields()"><span class="icon">🔄</span>Reset Fields</a></li>
+                    <li><a href="#" onclick="exportPDF()"><span class="icon">📥</span>Export PDF</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div style="display: flex; align-items: center;">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                    <h1>ChequeShield – Cockpit Precision Cheque Printing</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn secondary" onclick="undoLastAction()">↩ Undo</button>
+                    <button class="header-btn primary" onclick="printCheque()">🖨️ Print</button>
+                </div>
+            </header>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <label>Bank:</label>
+                    <select id="bankSelector" onchange="changeBankTemplate()">
+                        <option value="hdfc">HDFC Bank</option>
+                        <option value="sbi">State Bank of India</option>
+                        <option value="icici">ICICI Bank</option>
+                        <option value="axis">Axis Bank</option>
+                        <option value="custom">Custom Upload</option>
+                    </select>
+                </div>
+                <div class="toolbar-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="snapToGrid" onchange="toggleGrid()">
+                        <span class="toggle-slider"></span>
+                        Snap to Grid
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn secondary" onclick="uploadBackground()">📁 Upload BG</button>
+                    <input type="file" id="bgUpload" accept="image/*" style="display: none;" onchange="handleBgUpload(event)">
+                </div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="testPrint()">🧪 Test Update</button>
+                    <button class="toolbar-btn secondary" onclick="focusMode()">🎯 Focus</button>
+                </div>
+                <div class="toolbar-group">
+                    <label>Zoom:</label>
+                    <select id="zoomLevel" onchange="changeZoom()">
+                        <option value="0.75">75%</option>
+                        <option value="1" selected>100%</option>
+                        <option value="1.25">125%</option>
+                        <option value="1.5">150%</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Workspace -->
+            <div class="workspace" id="workspace">
+                <div class="cheque-container" id="chequeContainer">
+                    <div class="grid-overlay" id="gridOverlay"></div>
+                    
+                    <!-- HDFC Cheque Background -->
+                    <div class="cheque-bg" id="chequeBg">
+                        <!-- Header -->
+                        <div class="cheque-header">
+                            <div class="cheque-logo">
+                                <div class="cheque-logo-icon">H</div>
+                                <span class="cheque-logo-text">HDFC BANK</span>
+                                <span class="cheque-tagline">We understand your world</span>
+                            </div>
+                        </div>
+
+                        <!-- Cheque Title -->
+                        <div class="cheque-title">CHEQUE</div>
+
+                        <!-- Cheque Number -->
+                        <div class="cheque-number">
+                            Cheque No: <span id="chequeNoDisplay">000123</span>
+                        </div>
+
+                        <!-- Bank Details -->
+                        <div class="bank-details">
+                            <strong>HDFC Bank Limited</strong><br>
+                            Branch: Connaught Place, New Delhi<br>
+                            IFSC: HDFC0001234<br>
+                            Address: 123 Banking Street, Delhi 110001
+                        </div>
+
+                        <!-- Labels -->
+                        <div class="pay-label">Pay</div>
+                        <div class="rupees-label">Rupees</div>
+
+                        <!-- Amount Box -->
+                        <div class="amount-box" id="amountBoxDisplay"></div>
+
+                        <!-- Signature Line -->
+                        <div class="signature-line">
+                            <div class="signature-line-text">Authorised Signatory</div>
+                            <div class="signature-border"></div>
+                        </div>
+
+                        <!-- MICR Line -->
+                        <div class="micr-line">
+                            <div class="micr-item">
+                                <span class="micr-symbol">⍟</span>
+                                <span>500001011</span>
+                                <span class="micr-symbol">⍟</span>
+                            </div>
+                            <div class="micr-item">
+                                <span>HDFC0001234</span>
+                            </div>
+                            <div class="micr-item">
+                                <span>00012345678</span>
+                                <span class="micr-symbol">⍟</span>
+                            </div>
+                        </div>
+
+                        <!-- Draggable Fields Container -->
+                        <div id="fieldsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Field Buttons Panel -->
+                <div class="field-buttons">
+                    <button class="field-btn" onclick="addField('payee')"><span class="icon">👤</span>Add Payee</button>
+                    <button class="field-btn" onclick="addField('amount')"><span class="icon">💰</span>Add Amount</button>
+                    <button class="field-btn" onclick="addField('date')"><span class="icon">📅</span>Add Date</button>
+                    <button class="field-btn" onclick="addField('words')"><span class="icon">📝</span>Add Words</button>
+                    <button class="field-btn" onclick="addField('account')"><span class="icon">🏦</span>Add A/C No.</button>
+                    <button class="field-btn" onclick="addField('signature')"><span class="icon">✍️</span>Add Signature</button>
+                    <button class="field-btn" onclick="addField('stamp')"><span class="icon">🔴</span>Add Stamp</button>
+                    <button class="field-btn" onclick="addField('custom')"><span class="icon">➕</span>Add Custom</button>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="bottom-bar">
+                <div class="mode-selector">
+                    <button class="mode-btn active" id="singleMode" onclick="setMode('single')">Single Mode</button>
+                    <button class="mode-btn" id="bulkMode" onclick="setMode('bulk')">Bulk Mode</button>
+                </div>
+                <div class="bottom-actions">
+                    <button class="bottom-btn warning" onclick="previewCheque()">👁️ Preview</button>
+                    <button class="bottom-btn success" onclick="saveTemplate()">💾 Save</button>
+                    <button class="bottom-btn primary" onclick="exportPDF()">📥 Export PDF</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="properties-panel" id="propertiesPanel">
+        <h4>Field Properties</h4>
+        <div class="property-group">
+            <label>Text Content</label>
+            <input type="text" id="propText" onchange="updateFieldProperty('text')">
+        </div>
+        <div class="property-group">
+            <label>Font Size (px)</label>
+            <input type="number" id="propFontSize" value="14" onchange="updateFieldProperty('fontSize')">
+        </div>
+        <div class="property-group">
+            <label>Font Weight</label>
+            <select id="propFontWeight" onchange="updateFieldProperty('fontWeight')">
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+            </select>
+        </div>
+        <div class="property-group">
+            <label>Text Color</label>
+            <input type="color" id="propColor" value="#000000" onchange="updateFieldProperty('color')">
+        </div>
+        <div class="property-group">
+            <label>Background</label>
+            <input type="color" id="propBg" value="#ffffff" onchange="updateFieldProperty('bgColor')">
+        </div>
+        <button class="toolbar-btn" style="width: 100%; margin-top: 10px;" onclick="deleteSelectedField()">🗑️ Delete Field</button>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal for Custom Field -->
+    <div class="modal-overlay" id="customFieldModal">
+        <div class="modal">
+            <h3>Add Custom Field</h3>
+            <div class="modal-form">
+                <label>Field Label</label>
+                <input type="text" id="customFieldLabel" placeholder="e.g., Reference No.">
+                <label>Default Value</label>
+                <input type="text" id="customFieldValue" placeholder="Enter default text">
+                <label>Field Type</label>
+                <select id="customFieldType">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                    <option value="currency">Currency</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="header-btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="header-btn primary" onclick="addCustomField()">Add Field</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== State Management ====================
+        let fields = [];
+        let selectedField = null;
+        let isDragging = false;
+        let isResizing = false;
+        let dragOffset = { x: 0, y: 0 };
+        let resizeStartPos = { x: 0, y: 0 };
+        let resizeStartSize = { width: 0, height: 0 };
+        let snapToGridEnabled = false;
+        let gridSnapSize = 10;
+        let fieldCounter = 0;
+        let historyStack = [];
+
+        // ==================== Initialization ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDefaultFields();
+            loadSavedTemplate();
+            setupEventListeners();
+        });
+
+        function initializeDefaultFields() {
+            // Pre-loaded fields positioned realistically
+            const defaultFields = [
+                {
+                    id: 'payee-field',
+                    type: 'payee',
+                    text: 'M/s. ABC Corporation Pvt. Ltd.',
+                    x: 80,
+                    y: 130,
+                    width: 350,
+                    height: 30,
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    color: '#000000',
+                    bgColor: 'rgba(255,255,255,0)'
+                },
+                {
+                    id: 'amount-figures',
+                    type: 'amount',
+                    text: '50,000.00',
+                    x: 750,
+                    y: 130,
+                    width: 120,
+                    height: 35,
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    color: '#000000',
+                    bgColor: 'rgba(255,255,255,0)'
+                },
+                {
+                    id: 'date-field',
+                    type: 'date',
+                    text: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+                    x: 650,
+                    y: 90,
+                    width: 150,
+                    height: 25,
+                    fontSize: 12,
+                    fontWeight: 'normal',
+                    color: '#000000',
+                    bgColor: 'rgba(255,255,255,0)'
+                },
+                {
+                    id: 'amount-words',
+                    type: 'words',
+                    text: 'Rupees Fifty Thousand Only',
+                    x: 100,
+                    y: 170,
+                    width: 500,
+                    height: 25,
+                    fontSize: 13,
+                    fontWeight: 'normal',
+                    color: '#000000',
+                    bgColor: 'rgba(255,255,255,0)'
+                },
+                {
+                    id: 'account-field',
+                    type: 'account',
+                    text: 'A/C No: 50200012345678',
+                    x: 30,
+                    y: 110,
+                    width: 200,
+                    height: 20,
+                    fontSize: 10,
+                    fontWeight: 'normal',
+                    color: '#666666',
+                    bgColor: 'rgba(255,255,255,0)'
+                },
+                {
+                    id: 'signature-field',
+                    type: 'signature',
+                    text: '',
+                    x: 680,
+                    y: 250,
+                    width: 180,
+                    height: 40,
+                    fontSize: 14,
+                    fontWeight: 'normal',
+                    color: '#000080',
+                    bgColor: 'rgba(255,255,255,0)',
+                    signature: true
+                },
+                {
+                    id: 'stamp-field',
+                    type: 'stamp',
+                    text: 'A/C PAYEE ONLY',
+                    x: 200,
+                    y: 80,
+                    width: 140,
+                    height: 35,
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    color: '#e31e24',
+                    bgColor: 'rgba(227,30,36,0.1)',
+                    rotation: -15,
+                    stamp: true
+                }
+            ];
+
+            fields = defaultFields;
+            renderFields();
+        }
+
+        // ==================== Field Rendering ====================
+        function renderFields() {
+            const container = document.getElementById('fieldsContainer');
+            container.innerHTML = '';
+
+            fields.forEach(field => {
+                const fieldEl = createFieldElement(field);
+                container.appendChild(fieldEl);
+            });
+        }
+
+        function createFieldElement(field) {
+            const div = document.createElement('div');
+            div.className = 'draggable-field' + (field.stamp ? ' stamp-field' : '');
+            div.id = field.id;
+            div.dataset.fieldId = field.id;
+            
+            div.style.left = field.x + 'px';
+            div.style.top = field.y + 'px';
+            div.style.width = field.width + 'px';
+            div.style.height = field.height + 'px';
+            div.style.fontSize = field.fontSize + 'px';
+            div.style.fontWeight = field.fontWeight;
+            div.style.color = field.color;
+            div.style.backgroundColor = field.bgColor;
+            
+            if (field.rotation) {
+                div.style.transform = `rotate(${field.rotation}deg)`;
+            }
+
+            if (field.signature) {
+                div.style.borderBottom = '1px solid #333';
+                div.style.background = 'transparent';
+            }
+
+            div.innerHTML = `
+                <span class="field-label">${field.type.toUpperCase()}</span>
+                <span class="field-content" contenteditable="false">${field.text}</span>
+                <div class="resize-handle"></div>
+            `;
+
+            // Event listeners for field
+            div.addEventListener('mousedown', handleFieldMouseDown);
+            div.addEventListener('dblclick', handleFieldDoubleClick);
+
+            const resizeHandle = div.querySelector('.resize-handle');
+            resizeHandle.addEventListener('mousedown', handleResizeStart);
+
+            return div;
+        }
+
+        // ==================== Drag & Drop ====================
+        function handleFieldMouseDown(e) {
+            if (e.target.classList.contains('resize-handle')) return;
+            if (e.target.isContentEditable) return;
+
+            e.preventDefault();
+            const fieldEl = e.currentTarget;
+            const fieldId = fieldEl.dataset.fieldId;
+            const field = fields.find(f => f.id === fieldId);
+
+            selectField(fieldId);
+
+            isDragging = true;
+            const rect = fieldEl.getBoundingClientRect();
+            const containerRect = document.getElementById('chequeBg').getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', handleDragEnd);
+        }
+
+        function handleDrag(e) {
+            if (!isDragging || !selectedField) return;
+
+            const containerRect = document.getElementById('chequeBg').getBoundingClientRect();
+            let newX = e.clientX - containerRect.left - dragOffset.x;
+            let newY = e.clientY - containerRect.top - dragOffset.y;
+
+            if (snapToGridEnabled) {
+                newX = Math.round(newX / gridSnapSize) * gridSnapSize;
+                newY = Math.round(newY / gridSnapSize) * gridSnapSize;
+            }
+
+            // Boundary checks
+            newX = Math.max(0, Math.min(newX, containerRect.width - selectedField.width));
+            newY = Math.max(0, Math.min(newY, containerRect.height - selectedField.height));
+
+            selectedField.x = newX;
+            selectedField.y = newY;
+
+            const fieldEl = document.querySelector(`[data-field-id="${selectedField.id}"]`);
+            if (fieldEl) {
+                fieldEl.style.left = newX + 'px';
+                fieldEl.style.top = newY + 'px';
+            }
+        }
+
+        function handleDragEnd() {
+            isDragging = false;
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', handleDragEnd);
+            saveToHistory();
+        }
+
+        // ==================== Resize ====================
+        function handleResizeStart(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const fieldEl = e.target.closest('.draggable-field');
+            const fieldId = fieldEl.dataset.fieldId;
+            selectedField = fields.find(f => f.id === fieldId);
+
+            isResizing = true;
+            resizeStartPos = { x: e.clientX, y: e.clientY };
+            resizeStartSize = { width: selectedField.width, height: selectedField.height };
+
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('mouseup', handleResizeEnd);
+        }
+
+        function handleResize(e) {
+            if (!isResizing || !selectedField) return;
+
+            const deltaX = e.clientX - resizeStartPos.x;
+            const deltaY = e.clientY - resizeStartPos.y;
+
+            let newWidth = resizeStartSize.width + deltaX;
+            let newHeight = resizeStartSize.height + deltaY;
+
+            if (snapToGridEnabled) {
+                newWidth = Math.round(newWidth / gridSnapSize) * gridSnapSize;
+                newHeight = Math.round(newHeight / gridSnapSize) * gridSnapSize;
+            }
+
+            newWidth = Math.max(50, newWidth);
+            newHeight = Math.max(20, newHeight);
+
+            selectedField.width = newWidth;
+            selectedField.height = newHeight;
+
+            const fieldEl = document.querySelector(`[data-field-id="${selectedField.id}"]`);
+            if (fieldEl) {
+                fieldEl.style.width = newWidth + 'px';
+                fieldEl.style.height = newHeight + 'px';
+            }
+        }
+
+        function handleResizeEnd() {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleResize);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            saveToHistory();
+        }
+
+        // ==================== Selection ====================
+        function selectField(fieldId) {
+            // Deselect previous
+            document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            selectedField = fields.find(f => f.id === fieldId);
+            
+            if (selectedField) {
+                const fieldEl = document.querySelector(`[data-field-id="${fieldId}"]`);
+                if (fieldEl) {
+                    fieldEl.classList.add('selected');
+                }
+                showPropertiesPanel(selectedField);
+            }
+        }
+
+        function handleFieldDoubleClick(e) {
+            if (e.target.classList.contains('resize-handle')) return;
+
+            const fieldEl = e.currentTarget;
+            const fieldId = fieldEl.dataset.fieldId;
+            const field = fields.find(f => f.id === fieldId);
+
+            const contentEl = fieldEl.querySelector('.field-content');
+            contentEl.contentEditable = 'true';
+            fieldEl.classList.add('editing');
+            contentEl.focus();
+
+            // Select all text
+            document.execCommand('selectAll', false, null);
+
+            contentEl.addEventListener('blur', function() {
+                contentEl.contentEditable = 'false';
+                fieldEl.classList.remove('editing');
+                field.text = contentEl.innerText;
+                saveToHistory();
+            });
+
+            contentEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    contentEl.blur();
+                }
+            });
+        }
+
+        // ==================== Add Fields ====================
+        function addField(type) {
+            fieldCounter++;
+            const fieldId = `field-${fieldCounter}-${Date.now()}`;
+            
+            const fieldTypes = {
+                payee: { text: 'Payee Name', width: 300, height: 30, fontSize: 14, fontWeight: 'bold' },
+                amount: { text: '0.00', width: 100, height: 30, fontSize: 16, fontWeight: 'bold' },
+                date: { text: new Date().toLocaleDateString('en-IN'), width: 120, height: 25, fontSize: 12 },
+                words: { text: 'Rupees ................................ Only', width: 400, height: 25, fontSize: 13 },
+                account: { text: 'A/C No: ', width: 180, height: 20, fontSize: 10, color: '#666' },
+                signature: { text: '', width: 150, height: 35, fontSize: 14, signature: true },
+                stamp: { text: 'A/C PAYEE ONLY', width: 120, height: 30, fontSize: 12, fontWeight: 'bold', color: '#e31e24', stamp: true, rotation: -15 }
+            };
+
+            const config = fieldTypes[type] || fieldTypes.payee;
+            
+            const newField = {
+                id: fieldId,
+                type: type,
+                text: config.text,
+                x: 50 + (fieldCounter * 10),
+                y: 150 + (fieldCounter * 10),
+                width: config.width,
+                height: config.height,
+                fontSize: config.fontSize,
+                fontWeight: config.fontWeight || 'normal',
+                color: config.color || '#000000',
+                bgColor: config.bgColor || 'rgba(255,255,255,0)',
+                rotation: config.rotation,
+                signature: config.signature,
+                stamp: config.stamp
+            };
+
+            fields.push(newField);
+            renderFields();
+            selectField(fieldId);
+            saveToHistory();
+            showToast('Field added successfully', 'success');
+        }
+
+        function addCustomField() {
+            const label = document.getElementById('customFieldLabel').value;
+            const value = document.getElementById('customFieldValue').value;
+            const type = document.getElementById('customFieldType').value;
+
+            if (!label) {
+                showToast('Please enter a field label', 'error');
+                return;
+            }
+
+            fieldCounter++;
+            const fieldId = `custom-${fieldCounter}-${Date.now()}`;
+
+            const newField = {
+                id: fieldId,
+                type: 'custom',
+                label: label,
+                text: value,
+                x: 50 + (fieldCounter * 10),
+                y: 150 + (fieldCounter * 10),
+                width: 200,
+                height: 25,
+                fontSize: 12,
+                fontWeight: 'normal',
+                color: '#000000',
+                bgColor: 'rgba(255,255,255,0)'
+            };
+
+            fields.push(newField);
+            renderFields();
+            selectField(fieldId);
+            closeModal();
+            saveToHistory();
+            showToast('Custom field added', 'success');
+
+            // Reset form
+            document.getElementById('customFieldLabel').value = '';
+            document.getElementById('customFieldValue').value = '';
+        }
+
+        // ==================== Properties Panel ====================
+        function showPropertiesPanel(field) {
+            const panel = document.getElementById('propertiesPanel');
+            panel.classList.add('active');
+
+            document.getElementById('propText').value = field.text;
+            document.getElementById('propFontSize').value = field.fontSize;
+            document.getElementById('propFontWeight').value = field.fontWeight;
+            document.getElementById('propColor').value = rgbToHex(field.color);
+            document.getElementById('propBg').value = field.bgColor.startsWith('#') ? field.bgColor : '#ffffff';
+        }
+
+        function updateFieldProperty(property) {
+            if (!selectedField) return;
+
+            switch(property) {
+                case 'text':
+                    selectedField.text = document.getElementById('propText').value;
+                    break;
+                case 'fontSize':
+                    selectedField.fontSize = parseInt(document.getElementById('propFontSize').value);
+                    break;
+                case 'fontWeight':
+                    selectedField.fontWeight = document.getElementById('propFontWeight').value;
+                    break;
+                case 'color':
+                    selectedField.color = document.getElementById('propColor').value;
+                    break;
+                case 'bgColor':
+                    selectedField.bgColor = document.getElementById('propBg').value;
+                    break;
+            }
+
+            renderFields();
+            selectField(selectedField.id);
+            saveToHistory();
+        }
+
+        function deleteSelectedField() {
+            if (!selectedField) {
+                showToast('No field selected', 'warning');
+                return;
+            }
+
+            fields = fields.filter(f => f.id !== selectedField.id);
+            selectedField = null;
+            document.getElementById('propertiesPanel').classList.remove('active');
+            renderFields();
+            saveToHistory();
+            showToast('Field deleted', 'success');
+        }
+
+        // ==================== Grid & Snap ====================
+        function toggleGrid() {
+            snapToGridEnabled = document.getElementById('snapToGrid').checked;
+            const gridOverlay = document.getElementById('gridOverlay');
+            gridOverlay.classList.toggle('active', snapToGridEnabled);
+            showToast(snapToGridEnabled ? 'Snap to Grid enabled' : 'Snap to Grid disabled', 'success');
+        }
+
+        // ==================== Template Management ====================
+        function saveTemplate(templateName = null) {
+            const name = templateName || prompt('Enter template name:', 'my-template-' + Date.now());
+            if (!name) return;
+
+            const template = {
+                name: name,
+                fields: fields,
+                bank: document.getElementById('bankSelector').value,
+                savedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('chequeshield-template-' + name, JSON.stringify(template));
+            localStorage.setItem('chequeshield-last-template', name);
+            showToast('Template saved successfully', 'success');
+        }
+
+        function loadTemplate(templateName) {
+            const templateData = localStorage.getItem('chequeshield-template-' + templateName);
+            if (!templateData) {
+                showToast('Template not found', 'error');
+                return;
+            }
+
+            const template = JSON.parse(templateData);
+            fields = template.fields || [];
+            document.getElementById('bankSelector').value = template.bank || 'hdfc';
+            
+            renderFields();
+            showToast('Template loaded: ' + templateName, 'success');
+        }
+
+        function loadSavedTemplate() {
+            const lastTemplate = localStorage.getItem('chequeshield-last-template');
+            if (lastTemplate) {
+                loadTemplate(lastTemplate);
+            }
+        }
+
+        function resetFields() {
+            if (confirm('Are you sure you want to reset to default fields?')) {
+                initializeDefaultFields();
+                saveToHistory();
+                showToast('Fields reset to default', 'success');
+            }
+        }
+
+        // ==================== History/Undo ====================
+        function saveToHistory() {
+            historyStack.push(JSON.parse(JSON.stringify(fields)));
+            if (historyStack.length > 20) {
+                historyStack.shift();
+            }
+        }
+
+        function undoLastAction() {
+            if (historyStack.length === 0) {
+                showToast('Nothing to undo', 'warning');
+                return;
+            }
+
+            fields = historyStack.pop();
+            renderFields();
+            showToast('Action undone', 'success');
+        }
+
+        // ==================== Export/Print ====================
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            // Deselect all fields for clean export
+            document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.getElementById('propertiesPanel').classList.remove('active');
+
+            const chequeContainer = document.getElementById('chequeContainer');
+            
+            // Create PDF in landscape mode
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [230, 90] // Approximate cheque size
+            });
+
+            // Capture the cheque as image
+            html2canvas(chequeContainer, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, 230, 90);
+                pdf.save('cheque-' + Date.now() + '.pdf');
+                showToast('PDF exported successfully', 'success');
+            }).catch(err => {
+                console.error('PDF export error:', err);
+                showToast('PDF export failed. Try print instead.', 'error');
+            });
+        }
+
+        function printCheque() {
+            // Deselect all fields for clean print
+            document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.getElementById('propertiesPanel').classList.remove('active');
+            document.getElementById('gridOverlay').classList.remove('active');
+            document.querySelector('.field-buttons').style.display = 'none';
+
+            setTimeout(() => {
+                window.print();
+                // Restore UI
+                document.querySelector('.field-buttons').style.display = 'flex';
+                if (snapToGridEnabled) {
+                    document.getElementById('gridOverlay').classList.add('active');
+                }
+            }, 100);
+        }
+
+        function previewCheque() {
+            // Deselect all fields
+            document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.getElementById('propertiesPanel').classList.remove('active');
+            document.getElementById('gridOverlay').classList.remove('active');
+
+            showToast('Preview mode - Use Print for final output', 'success');
+
+            setTimeout(() => {
+                if (snapToGridEnabled) {
+                    document.getElementById('gridOverlay').classList.add('active');
+                }
+            }, 2000);
+        }
+
+        // ==================== Utility Functions ====================
+        function changeBankTemplate() {
+            const bank = document.getElementById('bankSelector').value;
+            showToast('Bank template changed to: ' + bank.toUpperCase(), 'success');
+            // In a full implementation, this would load different cheque backgrounds
+        }
+
+        function uploadBackground() {
+            document.getElementById('bgUpload').click();
+        }
+
+        function handleBgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const chequeBg = document.getElementById('chequeBg');
+                chequeBg.style.backgroundImage = `url(${e.target.result})`;
+                chequeBg.style.backgroundSize = 'cover';
+                showToast('Background uploaded successfully', 'success');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function testPrint() {
+            showToast('Test print sent to default printer', 'success');
+        }
+
+        function focusMode() {
+            const sidebar = document.getElementById('sidebar');
+            const toolbar = document.querySelector('.toolbar');
+            const bottomBar = document.querySelector('.bottom-bar');
+            const fieldButtons = document.querySelector('.field-buttons');
+
+            sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+            toolbar.style.display = toolbar.style.display === 'none' ? 'flex' : 'none';
+            bottomBar.style.display = bottomBar.style.display === 'none' ? 'flex' : 'none';
+            fieldButtons.style.display = fieldButtons.style.display === 'none' ? 'flex' : 'none';
+
+            showToast('Focus mode toggled', 'success');
+        }
+
+        function changeZoom() {
+            const zoom = document.getElementById('zoomLevel').value;
+            const chequeContainer = document.getElementById('chequeContainer');
+            chequeContainer.style.transform = `scale(${zoom})`;
+            chequeContainer.style.transformOrigin = 'top center';
+        }
+
+        function setMode(mode) {
+            document.getElementById('singleMode').classList.toggle('active', mode === 'single');
+            document.getElementById('bulkMode').classList.toggle('active', mode === 'bulk');
+            showToast(mode === 'single' ? 'Single Mode activated' : 'Bulk Mode activated', 'success');
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function closeModal() {
+            document.getElementById('customFieldModal').classList.remove('active');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✓' : type === 'error' ? '✗' : '⚠'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function rgbToHex(rgb) {
+            if (rgb.startsWith('#')) return rgb;
+            const match = rgb.match(/\d+/g);
+            if (!match) return '#000000';
+            return '#' + match.slice(0, 3).map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        // ==================== Keyboard Shortcuts ====================
+        document.addEventListener('keydown', function(e) {
+            // Delete key to remove selected field
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const activeElement = document.activeElement;
+                if (!activeElement.isContentEditable && selectedField) {
+                    e.preventDefault();
+                    deleteSelectedField();
+                }
+            }
+
+            // Ctrl+S to save
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveTemplate();
+            }
+
+            // Ctrl+Z to undo
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undoLastAction();
+            }
+
+            // Ctrl+P to print
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                printCheque();
+            }
+
+            // Escape to deselect
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                selectedField = null;
+                document.getElementById('propertiesPanel').classList.remove('active');
+            }
+        });
+
+        // ==================== Click outside to deselect ====================
+        document.getElementById('chequeBg').addEventListener('click', function(e) {
+            if (e.target === this || e.target.id === 'fieldsContainer') {
+                document.querySelectorAll('.draggable-field.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                selectedField = null;
+                document.getElementById('propertiesPanel').classList.remove('active');
+            }
+        });
+
+        // Add html2canvas dynamically for PDF export
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
